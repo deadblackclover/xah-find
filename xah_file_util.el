@@ -76,8 +76,7 @@
 
 (defun xah-print-file-count (εfilepath4287 εcount8086)
   "print file path and count"
-  (princ (format "• %d %s\n" εcount8086 εfilepath4287 ))
-  )
+  (princ (format "• %d %s\n" εcount8086 εfilepath4287 )))
 
 (defun xah-find-text (εsearch-str1 εinput-dir εpath-regex εfixed-case-search-p ξprintContext-p)
   "Report files that contain string, similar to Linux 「grep -F」."
@@ -87,8 +86,7 @@
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
     (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
     (y-or-n-p "Fixed case in search?")
-    (y-or-n-p "Print surrounding Text?")
- ) )
+    (y-or-n-p "Print surrounding Text?")))
 
   (let (
         (case-fold-search (not εfixed-case-search-p))
@@ -98,7 +96,7 @@
         p2 ; context end position
         )
 
-    (setq εinput-dir (file-name-as-directory εinput-dir) ) ; normalize dir path
+    (setq εinput-dir (file-name-as-directory εinput-dir)) ; normalize dir path
 
     (with-output-to-temp-buffer ξoutputBuffer
       (princ (format "-*- coding: utf-8 -*-
@@ -116,12 +114,11 @@ Path Regex 「%s」
            (insert-file-contents ξfp)
            (while (search-forward εsearch-str1 nil "NOERROR if not found")
              (setq ξcount (1+ ξcount))
-             (setq p1 (max 1 (- (match-beginning 0) xah-context-char-number )) )
-             (setq p2 (min (point-max) (+ (match-end 0) xah-context-char-number )) )
-             (when ξprintContext-p (xah-print-text-block (buffer-substring-no-properties p1 p2 )) ))
+             (setq p1 (max 1 (- (match-beginning 0) xah-context-char-number )))
+             (setq p2 (min (point-max) (+ (match-end 0) xah-context-char-number )))
+             (when ξprintContext-p (xah-print-text-block (buffer-substring-no-properties p1 p2 ))))
            (when (> ξcount 0)
-             (xah-print-file-count ξfp ξcount)
-              ) ) )
+             (xah-print-file-count ξfp ξcount))))
        (find-lisp-find-files εinput-dir εpath-regex))
 
       (switch-to-buffer ξoutputBuffer)
@@ -129,8 +126,7 @@ Path Regex 「%s」
       (hi-lock-mode 0) ; todo: major hack here. implement your own coloring
       (funcall 'fundamental-mode)
       (highlight-phrase (regexp-quote εsearch-str1) (quote hi-yellow))
-      (highlight-lines-matching-regexp "^• " (quote hi-pink))
-      ) ))
+      (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
 (defun xah-find-text-regex (εsearch-regex εinput-dir εpath-regex εfixed-case-search-p ξprintContextLevel )
   "Report files that contain a string pattern, similar to unix grep."
@@ -140,18 +136,15 @@ Path Regex 「%s」
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
     (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
     (y-or-n-p "Fixed case search?")
-    (ido-completing-read "Print context level (0=none, 1=matched pattern, 2=neighboring string) " '("0" "1" "2"))
-    )
-   )
+    (ido-completing-read "Print context level (0=none, 1=matched pattern, 2=neighboring string) " '("0" "1" "2"))))
 
   (let (
         (ξcount 0)
         (ξoutputBuffer "*xah-find-text-regex output*")
         (ξpos1 1) ; beginning of line
-        (ξpos2 1)
-        )
+        (ξpos2 1))
 
-    (setq εinput-dir (file-name-as-directory εinput-dir) ) ; add ending slash
+    (setq εinput-dir (file-name-as-directory εinput-dir)) ; add ending slash
 
     (with-output-to-temp-buffer ξoutputBuffer
       (princ (format "-*- coding: utf-8 -*-
@@ -177,14 +170,9 @@ Path Regex 「%s」
                (progn
                  (setq ξpos1 (max 1 (- (match-beginning 0) xah-context-char-number )))
                  (setq ξpos2 (min (point-max) (+ (match-end 0) xah-context-char-number )))
-                 (xah-print-text-block (buffer-substring-no-properties ξpos1 ξpos2 ))))
-              )
-             )
+                 (xah-print-text-block (buffer-substring-no-properties ξpos1 ξpos2 ))))))
            (when (> ξcount 0)
-             (xah-print-file-count ξfp ξcount)
-             )
-           )
-         )
+             (xah-print-file-count ξfp ξcount))))
        (find-lisp-find-files εinput-dir εpath-regex))
 
       (switch-to-buffer ξoutputBuffer)
@@ -192,9 +180,7 @@ Path Regex 「%s」
       (hi-lock-mode 0)
       (funcall 'fundamental-mode)
       (highlight-phrase εsearch-regex (quote hi-yellow))
-      (highlight-lines-matching-regexp "^• " (quote hi-pink))
-      )
-    ))
+      (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
 (defun xah-find-replace-text (εsearch-str εreplace-str εinput-dir εpath-regex εfixed-case-search-p εfixed-case-replace-p)
   "Find/Replace string in all files of a directory.
@@ -207,14 +193,11 @@ No regex."
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
     (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
     (y-or-n-p "Fixed case in search?")
-    (y-or-n-p "Fixed case in replacement?")
-    )
-   )
+    (y-or-n-p "Fixed case in replacement?")))
 
   (let (
         (ξoutputBuffer "*xah-find-replace-text output*")
-        (backupSuffix (xah-backup-suffix "t"))
-        )
+        (backupSuffix (xah-backup-suffix "t")))
     (with-output-to-temp-buffer ξoutputBuffer
       (princ (format "-*- coding: utf-8 -*-
 %s
@@ -227,40 +210,31 @@ Directory 〔%s〕
       (mapc
        (lambda (ξf)
          (let ( (case-fold-search (not εfixed-case-search-p))
-                (ξcount 0)
-                )
+                (ξcount 0))
            (with-temp-buffer
              (insert-file-contents ξf)
              (while (search-forward εsearch-str nil t)
                (replace-match εreplace-str εfixed-case-replace-p "literalreplace")
-               (setq ξcount (1+ ξcount) )
+               (setq ξcount (1+ ξcount))
                (xah-print-text-block (buffer-substring-no-properties
                                     (max 1 (- (match-beginning 0) xah-context-char-number ))
-                                    (min (point-max) (+ (point) xah-context-char-number ))))
-               )
+                                    (min (point-max) (+ (point) xah-context-char-number )))))
 
              (when (> ξcount 0)
                (copy-file ξf (concat ξf backupSuffix) t)
                (write-region 1 (point-max) ξf)
-               (xah-print-file-count ξf ξcount )
-               ) )
-           ))
+               (xah-print-file-count ξf ξcount )))))
 
        (find-lisp-find-files εinput-dir εpath-regex))
-      (princ "Done.")
-      )
+      (princ "Done."))
     (switch-to-buffer ξoutputBuffer)
     (buffer-enable-undo)
     (hi-lock-mode 0)
     (funcall 'fundamental-mode)
     (progn
       (when (not (string= εreplace-str ""))
-        (highlight-phrase (regexp-quote εreplace-str) (quote hi-yellow))
-        )
-      (highlight-lines-matching-regexp "^• " (quote hi-pink))
-      )
-    )
-  )
+        (highlight-phrase (regexp-quote εreplace-str) (quote hi-yellow)))
+      (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
 (defun xah-find-replace-text-regex (ξregex εreplace-str εinput-dir εpath-regex ξwriteToFile-p εfixed-case-search-p εfixed-case-replace-p)
   "Find/Replace by regex in all files of a directory.
@@ -281,14 +255,11 @@ Directory 〔%s〕
     (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
-    (y-or-n-p "Fixed case in replacement?")
-    )
-   )
+    (y-or-n-p "Fixed case in replacement?")))
 
   (let (
         (ξoutputBuffer "*xah-find-replace-text-regex output*")
-        (backupSuffix (xah-backup-suffix "r"))
-        )
+        (backupSuffix (xah-backup-suffix "r")))
     (with-output-to-temp-buffer ξoutputBuffer
       (princ (format "-*- coding: utf-8 -*-
 %s
@@ -312,25 +283,18 @@ Directory 〔%s〕
                  (setq matchStrFound (match-string 0))
                  (replace-match εreplace-str εfixed-case-replace-p)
                  (setq matchStrReplaced (match-string 0))
-                 (setq ξcount (1+ ξcount) )
+                 (setq ξcount (1+ ξcount))
                  (princ (format "「%s」\n" matchStrFound))
-                 (princ (format "『%s』\n" matchStrReplaced))
-                 )
+                 (princ (format "『%s』\n" matchStrReplaced)))
 
                (when (> ξcount 0)
                  (when ξwriteToFile-p
                    (copy-file ξfp (concat ξfp backupSuffix) t)
-                   (write-region 1 (point-max) ξfp)
-                   )
-                 (princ (format "• %d %s\n" ξcount ξfp))
-                 ) )
-             )
-
-           ))
+                   (write-region 1 (point-max) ξfp))
+                 (princ (format "• %d %s\n" ξcount ξfp)))))))
 
        (find-lisp-find-files εinput-dir "\\.html$"))
-      (princ "Done ☺")
-      )
+      (princ "Done ☺"))
 
     (switch-to-buffer ξoutputBuffer)
     (buffer-enable-undo)
@@ -338,12 +302,8 @@ Directory 〔%s〕
     (funcall 'fundamental-mode)
     (progn
       (when (not (string= εreplace-str ""))
-        (highlight-phrase (regexp-quote ξregex) (quote hi-yellow))
-        )
-      (highlight-lines-matching-regexp "^• " (quote hi-pink))
-      )
-    )
-  )
+        (highlight-phrase (regexp-quote ξregex) (quote hi-yellow)))
+      (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
 (defun xah-find-count (εsearch-str ξcountExpr ξcountNumber εinput-dir εpath-regex)
   "Report how many occurances of a string, of a given dir.
@@ -354,12 +314,10 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
    (let* ( ξoperator)
      (list
       (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word))
-      (setq ξoperator (ido-completing-read "Greater less equal unqual:" '("<" ">" "<=" ">=" "=" "/=")) )
+      (setq ξoperator (ido-completing-read "Greater less equal unqual:" '("<" ">" "<=" ">=" "=" "/=")))
       (read-string (format "Count %s: "  ξoperator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
-      ))
-   )
+      (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history))))
 
   (let* (
          (outputBuffer "*xah-find-count output*")
@@ -371,11 +329,8 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
            ((string-equal ">=" ξcountExpr ) '>=)
            ((string-equal "=" ξcountExpr ) '=)
            ((string-equal "/=" ξcountExpr ) '/=)
-           (t (error "your count expression 「%s」 is wrong!" ξcountExpr ))
-           )
-          )
-         (countNumber (string-to-number ξcountNumber))
-         )
+           (t (error "your count expression 「%s」 is wrong!" ξcountExpr ))))
+         (countNumber (string-to-number ξcountNumber)))
 
     (with-output-to-temp-buffer outputBuffer
       (princ (format "-*- coding: utf-8 -*-
@@ -389,32 +344,27 @@ Path regex: 「%s」
                      (current-date-time-string) εsearch-str ξcountExpr ξcountNumber εinput-dir εpath-regex))
       (mapc
        (lambda (ξf)
-         (let ((ξcount 0)
-               )
+         (let ((ξcount 0))
            (when t
              (with-temp-buffer
                (insert-file-contents ξf)
                (goto-char 1)
                (while (search-forward εsearch-str nil "NOERROR if not found")
                  ;; (princ (format "「%s」\n" (buffer-substring-no-properties (line-beginning-position) (line-end-position) )))
-                 (setq ξcount (1+ ξcount))
-                 )
+                 (setq ξcount (1+ ξcount)))
 
                ;; report if the occurance is not n times
                (when
                    (funcall countOperator ξcount countNumber)
-                 (princ (format "• %d %s\n" ξcount ξf))
-                 ) ) ) ) )
+                 (princ (format "• %d %s\n" ξcount ξf)))))))
        (find-lisp-find-files εinput-dir "\\.html$"))
-      (princ "Done deal!")
-      )
+      (princ "Done deal!"))
 
     (switch-to-buffer outputBuffer)
     (buffer-enable-undo)
     (hi-lock-mode 0)
     (funcall 'fundamental-mode)
     (highlight-phrase εsearch-str (quote hi-yellow))
-    (highlight-lines-matching-regexp "^• " (quote hi-pink))
-    ))
+    (highlight-lines-matching-regexp "^• " (quote hi-pink))))
 
 (provide 'xah_file_util)
