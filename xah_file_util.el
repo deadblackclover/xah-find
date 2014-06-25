@@ -125,7 +125,7 @@ Path Regex 「%s」
        (find-lisp-find-files εinput-dir εpath-regex))
 
       (switch-to-buffer ξoutputBuffer)
-      (setq buffer-undo-list nil )
+      (buffer-enable-undo)
       (hi-lock-mode 0) ; todo: major hack here. implement your own coloring
       (funcall 'fundamental-mode)
       (highlight-phrase (regexp-quote εsearch-str1) (quote hi-yellow))
@@ -188,7 +188,7 @@ Path Regex 「%s」
        (find-lisp-find-files εinput-dir εpath-regex))
 
       (switch-to-buffer ξoutputBuffer)
-      (setq buffer-undo-list nil )
+      (buffer-enable-undo)
       (hi-lock-mode 0)
       (funcall 'fundamental-mode)
       (highlight-phrase εsearch-regex (quote hi-yellow))
@@ -250,7 +250,7 @@ Directory 〔%s〕
       (princ "Done.")
       )
     (switch-to-buffer ξoutputBuffer)
-    (setq buffer-undo-list nil )
+    (buffer-enable-undo)
     (hi-lock-mode 0)
     (funcall 'fundamental-mode)
     (progn
@@ -333,7 +333,7 @@ Directory 〔%s〕
       )
 
     (switch-to-buffer ξoutputBuffer)
-    (setq buffer-undo-list nil )
+    (buffer-enable-undo)
     (hi-lock-mode 0)
     (funcall 'fundamental-mode)
     (progn
@@ -410,7 +410,7 @@ Path regex: 「%s」
       )
 
     (switch-to-buffer outputBuffer)
-    (setq buffer-undo-list nil )
+    (buffer-enable-undo)
     (hi-lock-mode 0)
     (funcall 'fundamental-mode)
     (highlight-phrase εsearch-str (quote hi-yellow))
