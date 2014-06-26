@@ -92,8 +92,8 @@
         (case-fold-search (not φfixed-case-search-p))
         (ξcount 0)
         (ξoutputBuffer "*xah-find-text output*")
-        p1 ; context begin position
-        p2 ; context end position
+        ξp1 ; context begin position
+        ξp2 ; context end position
         )
 
     (setq φinput-dir (file-name-as-directory φinput-dir)) ; normalize dir path
@@ -114,9 +114,9 @@ Path Regex 「%s」
            (insert-file-contents ξfp)
            (while (search-forward φsearch-str1 nil "NOERROR if not found")
              (setq ξcount (1+ ξcount))
-             (setq p1 (max 1 (- (match-beginning 0) xah-context-char-number )))
-             (setq p2 (min (point-max) (+ (match-end 0) xah-context-char-number )))
-             (when φprintContext-p (xah-print-text-block (buffer-substring-no-properties p1 p2 ))))
+             (setq ξp1 (max 1 (- (match-beginning 0) xah-context-char-number )))
+             (setq ξp2 (min (point-max) (+ (match-end 0) xah-context-char-number )))
+             (when φprintContext-p (xah-print-text-block (buffer-substring-no-properties ξp1 ξp2 ))))
            (when (> ξcount 0)
              (xah-print-file-count ξfp ξcount))))
        (find-lisp-find-files φinput-dir φpath-regex))
@@ -197,7 +197,7 @@ No regex."
 
   (let (
         (ξoutputBuffer "*xah-find-replace-text output*")
-        (backupSuffix (xah-backup-suffix "t")))
+        (ξbackupSuffix (xah-backup-suffix "t")))
     (with-output-to-temp-buffer ξoutputBuffer
       (princ (format "-*- coding: utf-8 -*-
 %s
@@ -221,7 +221,7 @@ Directory 〔%s〕
                                     (min (point-max) (+ (point) xah-context-char-number )))))
 
              (when (> ξcount 0)
-               (copy-file ξf (concat ξf backupSuffix) t)
+               (copy-file ξf (concat ξf ξbackupSuffix) t)
                (write-region 1 (point-max) ξf)
                (xah-print-file-count ξf ξcount )))))
 
@@ -259,7 +259,7 @@ Directory 〔%s〕
 
   (let (
         (ξoutputBuffer "*xah-find-replace-text-regex output*")
-        (backupSuffix (xah-backup-suffix "r")))
+        (ξbackupSuffix (xah-backup-suffix "r")))
     (with-output-to-temp-buffer ξoutputBuffer
       (princ (format "-*- coding: utf-8 -*-
 %s
@@ -273,23 +273,23 @@ Directory 〔%s〕
        (lambda (ξfp)
          (let (
                 (ξcount 0)
-                matchStrFound matchStrReplaced )
+                ξmatchStrFound ξmatchStrReplaced )
 
            (when t
              (with-temp-buffer
                (insert-file-contents ξfp)
                (setq case-fold-search (not φfixed-case-search-p))
                (while (re-search-forward φregex nil t)
-                 (setq matchStrFound (match-string 0))
+                 (setq ξmatchStrFound (match-string 0))
                  (replace-match φreplace-str φfixed-case-replace-p)
-                 (setq matchStrReplaced (match-string 0))
+                 (setq ξmatchStrReplaced (match-string 0))
                  (setq ξcount (1+ ξcount))
-                 (princ (format "「%s」\n" matchStrFound))
-                 (princ (format "『%s』\n" matchStrReplaced)))
+                 (princ (format "「%s」\n" ξmatchStrFound))
+                 (princ (format "『%s』\n" ξmatchStrReplaced)))
 
                (when (> ξcount 0)
                  (when φwriteToFile-p
-                   (copy-file ξfp (concat ξfp backupSuffix) t)
+                   (copy-file ξfp (concat ξfp ξbackupSuffix) t)
                    (write-region 1 (point-max) ξfp))
                  (princ (format "• %d %s\n" ξcount ξfp)))))))
 
@@ -305,7 +305,7 @@ Directory 〔%s〕
         (highlight-phrase (regexp-quote φregex) (quote hi-yellow)))
       (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
-(defun xah-find-count (φsearch-str φcountExpr φcountNumber φinput-dir φpath-regex)
+(defun xah-find-count (φsearch-str φcount-expr φcount-number φinput-dir φpath-regex)
   "Report how many occurances of a string, of a given dir.
 Similar to grep, written in elisp.
 
@@ -320,19 +320,19 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
       (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history))))
 
   (let* (
-         (outputBuffer "*xah-find-count output*")
-         (countOperator
+         (ξoutputBuffer "*xah-find-count output*")
+         (ξcountOperator
           (cond
-           ((string-equal "<" φcountExpr ) '<)
-           ((string-equal "<=" φcountExpr ) '<=)
-           ((string-equal ">" φcountExpr ) '>)
-           ((string-equal ">=" φcountExpr ) '>=)
-           ((string-equal "=" φcountExpr ) '=)
-           ((string-equal "/=" φcountExpr ) '/=)
-           (t (error "your count expression 「%s」 is wrong!" φcountExpr ))))
-         (countNumber (string-to-number φcountNumber)))
+           ((string-equal "<" φcount-expr ) '<)
+           ((string-equal "<=" φcount-expr ) '<=)
+           ((string-equal ">" φcount-expr ) '>)
+           ((string-equal ">=" φcount-expr ) '>=)
+           ((string-equal "=" φcount-expr ) '=)
+           ((string-equal "/=" φcount-expr ) '/=)
+           (t (error "your count expression 「%s」 is wrong!" φcount-expr ))))
+         (ξcountNumber (string-to-number φcount-number)))
 
-    (with-output-to-temp-buffer outputBuffer
+    (with-output-to-temp-buffer ξoutputBuffer
       (princ (format "-*- coding: utf-8 -*-
 Date: %s
 Command “xah-find-count” result.
@@ -341,7 +341,7 @@ Count expression: 「%s %s」
 Input dir: 「%s」
 Path regex: 「%s」
 " 
-                     (current-date-time-string) φsearch-str φcountExpr φcountNumber φinput-dir φpath-regex))
+                     (current-date-time-string) φsearch-str φcount-expr φcount-number φinput-dir φpath-regex))
       (mapc
        (lambda (ξf)
          (let ((ξcount 0))
@@ -355,12 +355,12 @@ Path regex: 「%s」
 
                ;; report if the occurance is not n times
                (when
-                   (funcall countOperator ξcount countNumber)
+                   (funcall ξcountOperator ξcount ξcountNumber)
                  (princ (format "• %d %s\n" ξcount ξf)))))))
        (find-lisp-find-files φinput-dir "\\.html$"))
       (princ "Done deal!"))
 
-    (switch-to-buffer outputBuffer)
+    (switch-to-buffer ξoutputBuffer)
     (buffer-enable-undo)
     (hi-lock-mode 0)
     (funcall 'fundamental-mode)
