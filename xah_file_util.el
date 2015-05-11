@@ -247,6 +247,7 @@ Directory 〔%s〕
     (buffer-enable-undo)
     (hi-lock-mode 0)
     (funcall 'fundamental-mode)
+    (delete-other-windows)
     (progn
       (when (not (string= φreplace-str ""))
         (highlight-phrase (regexp-quote φreplace-str) (quote hi-yellow)))
