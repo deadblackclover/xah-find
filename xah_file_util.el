@@ -79,7 +79,7 @@
   (princ (format "• %d %s\n" φcount8086 φfilepath4287 )))
 
 (defun xah-find-text (φsearch-str1 φinput-dir φpath-regex φfixed-case-search-p φprintContext-p)
-  "Report files that contain string, similar to Linux 「grep -F」.
+  "Report files that contain string.
 By default, not case sensitive, and print surrounding text.
 If `universal-argument' is called first, prompt to ask."
   (interactive
@@ -92,14 +92,8 @@ If `universal-argument' is called first, prompt to ask."
       (read-string (format "Search string (default %s): " ξdefault-input) nil 'query-replace-history ξdefault-input)
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
       (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
-      (if current-prefix-arg
-          (y-or-n-p "Fixed case in search?")
-        nil
-        )      
-      (if current-prefix-arg
-          (y-or-n-p "Print surrounding Text?")
-        t
-        ))))
+      (if current-prefix-arg (y-or-n-p "Fixed case in search?") nil )
+      (if current-prefix-arg (y-or-n-p "Print surrounding Text?") t ))))
 
   (let (
         (case-fold-search (not φfixed-case-search-p))
@@ -121,23 +115,23 @@ Path Regex 「%s」
 
 " (xah-current-date-time-string) φsearch-str1 φinput-dir φpath-regex))
       (mapc
-       (lambda (ξfp)
+       (lambda (ξpath)
          (setq ξcount 0)
          (with-temp-buffer
-           (insert-file-contents ξfp)
-           (while (search-forward φsearch-str1 nil "NOERROR if not found")
+           (insert-file-contents ξpath)
+           (while (search-forward φsearch-str1 nil "NOERROR")
              (setq ξcount (1+ ξcount))
              (setq ξp1 (max 1 (- (match-beginning 0) xah-context-char-number )))
              (setq ξp2 (min (point-max) (+ (match-end 0) xah-context-char-number )))
              (when φprintContext-p (xah-print-text-block (buffer-substring-no-properties ξp1 ξp2 ))))
            (when (> ξcount 0)
-             (xah-print-file-count ξfp ξcount))))
+             (xah-print-file-count ξpath ξcount))))
        (find-lisp-find-files φinput-dir φpath-regex))
 
       (switch-to-buffer ξoutputBuffer)
       (buffer-enable-undo)
-      (hi-lock-mode 0) ; todo: major hack here. implement your own coloring
-      (funcall 'fundamental-mode)
+      (fundamental-mode)
+      (hi-lock-mode) ; todo: implement my own coloring
       (highlight-phrase (regexp-quote φsearch-str1) (quote hi-yellow))
       (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
@@ -213,8 +207,13 @@ No regex."
   (let (
         (ξoutputBuffer "*xah-find-replace-text output*")
         (ξbackupSuffix (xah--backup-suffix "t")))
-    (with-output-to-temp-buffer ξoutputBuffer
-      (princ (format "-*- coding: utf-8 -*-
+
+    (with-temp-buffer-window
+     ;; with-output-to-temp-buffer
+     ξoutputBuffer
+     nil
+     nil
+     (princ (format "-*- coding: utf-8 -*-
 %s
 xah-find-replace-text result.
 Search string 「%s」
@@ -222,32 +221,32 @@ Replace string 『%s』
 Directory 〔%s〕
 
 " (xah-current-date-time-string) φsearch-str φreplace-str φinput-dir))
-      (mapc
-       (lambda (ξf)
-         (let ( (case-fold-search (not φfixed-case-search-p))
-                (ξcount 0))
-           (with-temp-buffer
-             (insert-file-contents ξf)
-             (while (search-forward φsearch-str nil t)
-               (replace-match φreplace-str φfixed-case-replace-p "literalreplace")
-               (setq ξcount (1+ ξcount))
-               (xah-print-text-block (buffer-substring-no-properties
-                                      (max 1 (- (match-beginning 0) xah-context-char-number ))
-                                      (min (point-max) (+ (point) xah-context-char-number )))))
+     (mapc
+      (lambda (ξf)
+        (let ( (case-fold-search (not φfixed-case-search-p))
+               (ξcount 0))
+          (with-temp-buffer
+            (insert-file-contents ξf)
+            (while (search-forward φsearch-str nil t)
+              (replace-match φreplace-str φfixed-case-replace-p "literalreplace")
+              (setq ξcount (1+ ξcount))
+              (xah-print-text-block
+               (buffer-substring-no-properties
+                (max 1 (- (match-beginning 0) xah-context-char-number ))
+                (min (point-max) (+ (point) xah-context-char-number )))))
 
-             (when (> ξcount 0)
-               (when φwrite-to-file-p
-                 (when φbackup-p (copy-file ξf (concat ξf ξbackupSuffix) t))
-                 (write-region 1 (point-max) ξf))
-               (xah-print-file-count ξf ξcount )))))
-
-       (find-lisp-find-files φinput-dir φpath-regex))
-      (princ "Done."))
+            (when (> ξcount 0)
+              (when φwrite-to-file-p
+                (when φbackup-p (copy-file ξf (concat ξf ξbackupSuffix) t))
+                (write-region 1 (point-max) ξf))
+              (xah-print-file-count ξf ξcount )))))
+      (find-lisp-find-files φinput-dir φpath-regex))
+     (princ "Done."))
     (switch-to-buffer ξoutputBuffer)
-    (buffer-enable-undo)
-    (hi-lock-mode 0)
-    (funcall 'fundamental-mode)
     (delete-other-windows)
+    ;; (hi-lock-mode -1) ; dunno what the heck is this here for
+    (fundamental-mode)
+    (buffer-enable-undo)
     (progn
       (when (not (string= φreplace-str ""))
         (highlight-phrase (regexp-quote φreplace-str) (quote hi-yellow)))
@@ -357,7 +356,7 @@ Search string: 「%s」
 Count expression: 「%s %s」
 Input dir: 「%s」
 Path regex: 「%s」
-" 
+"
                      (xah-current-date-time-string) φsearch-str φcount-expr φcount-number φinput-dir φpath-regex))
       (mapc
        (lambda (ξf)
