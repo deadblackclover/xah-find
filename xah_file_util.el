@@ -27,12 +27,15 @@
 ;; in unix grep, it's based on lines. If a string happens twice in a line, that line will be reported only once (with the occurences highlighted).
 ;; the output of commands of this package is not based on lines.
 ;; there will be 50 chars showing before and after the searched text or pattern.
-;; the number of chars to show is defined by `xah-context-char-number'
+;; the number of chars to show is defined by `xah-find-context-char-number'
 ;; each “block of text” in output is one occurrence.
 ;; for example, if a line in a file has 2 occurrences, then the same line will be reported twice, as 2 “blocks”.
 ;; so, the number of blocks corresponds exactly to the number of occurrences.
 
 ;; donate $5 please. Paypal to xah@xahlee.org , thanks.
+
+;; 2015-05-20 major todo.
+;; the feeble find-lisp-find-files is becoming a pain. And, there's no alternative except some “modern” API third-party shiny thing
 
 ;;; INSTALL
 
@@ -58,14 +61,63 @@
 
 ;;; Code:
 
-(require 'find-lisp)
-(require 'xeu_elisp_util)
+(require 'hi-lock) ; in emacs
+(require 'find-lisp) ; in emacs
+;; (require 'xeu_elisp_util) ; todo double check if this is used
 
-(defcustom xah-context-char-number 100 "number of characters to print before and after a search string."
+(defcustom xah-find-context-char-number 100 "number of characters to print before and after a search string."
 :group 'xah_file_util
 )
 
-(defun xah--backup-suffix (φs)
+(defcustom xah-find-dir-ignore-regex-list nil "A list or vector of regex patterns, if match, that directory will be ignored. Case is dependent on current value of `case-fold-search'"
+:group 'xah_file_util
+)
+(setq
+ xah-find-dir-ignore-regex-list
+ [
+  "\\.git/"
+  "xahlee_info/clojure-doc-1.6/"
+  "xahlee_info/css_2.1_spec/"
+  "xahlee_info/css_3_color_spec/"
+  "xahlee_info/css3_spec_bg/"
+  "xahlee_info/css_transitions/"
+  "xahlee_info/dom-whatwg/"
+  "xahlee_info/git-bottomup/"
+  "xahlee_info/java8_doc/"
+  "xahlee_info/javascript_ecma-262_5.1_2011/"
+  "xahlee_info/jquery_doc/"
+  "xahlee_info/node_api/"
+  "xahlee_info/php-doc/"
+  ])
+
+(defun xah-find--current-date-time-string ()
+  "Returns current date-time string in full ISO 8601 format.
+Example: 「2012-04-05T21:08:24-07:00」.
+
+Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are valid ISO 8601. However, Atom Webfeed spec seems to require 「hh:mm」."
+  (concat
+   (format-time-string "%Y-%m-%dT%T")
+   ((lambda (ξx) (format "%s:%s" (substring ξx 0 3) (substring ξx 3 5))) (format-time-string "%z"))))
+
+(defun xah-find--filter-list (φpredicate φlist)
+  "Return a new list such that φpredicate is true on all members of φlist.
+Note: φlist should not have a element equal to the string \"e3824ad41f2ec1ed\"."
+  (let ((ξresult (mapcar (lambda (ξx) (if (funcall φpredicate ξx) ξx "e3824ad41f2ec1ed" )) φlist)))
+    (setq ξresult (delete "e3824ad41f2ec1ed" ξresult))
+    ξresult
+    ))
+
+(defun xah-find--ignore-dir-p (φpath)
+  "Return true if φpath should be ignored. Else, nil."
+  (catch 'bbb
+    (mapc
+     (lambda (x)
+       (when (string-match x φpath) (throw 'bbb x)))
+     xah-find-dir-ignore-regex-list)
+    nil
+    ))
+
+(defun xah-find--backup-suffix (φs)
   "Return a string of the form 「~‹φs›~‹date-time-stamp›~」"
   (concat "~" φs "~" (format-time-string "%Y%m%d_%H%M%S") "~"))
 
@@ -74,10 +126,11 @@
   (princ (format "「%s」
 " φstring9462)))
 
-(defun xah-print-file-count (φfilepath4287 φcount8086)
-  "print file path and count"
+(defun xah-find--print-file-count (φfilepath4287 φcount8086)
+  "Print file path and count"
   (princ (format "• %d %s\n" φcount8086 φfilepath4287 )))
 
+;;;###autoload
 (defun xah-find-text (φsearch-str1 φinput-dir φpath-regex φfixed-case-search-p φprintContext-p)
   "Report files that contain string.
 By default, not case sensitive, and print surrounding text.
@@ -113,7 +166,7 @@ Search string 「%s」
 Directory 「%s」
 Path Regex 「%s」
 
-" (xah-current-date-time-string) φsearch-str1 φinput-dir φpath-regex))
+" (xah-find--current-date-time-string) φsearch-str1 φinput-dir φpath-regex))
       (mapc
        (lambda (ξpath)
          (setq ξcount 0)
@@ -121,12 +174,16 @@ Path Regex 「%s」
            (insert-file-contents ξpath)
            (while (search-forward φsearch-str1 nil "NOERROR")
              (setq ξcount (1+ ξcount))
-             (setq ξp1 (max 1 (- (match-beginning 0) xah-context-char-number )))
-             (setq ξp2 (min (point-max) (+ (match-end 0) xah-context-char-number )))
+             (setq ξp1 (max 1 (- (match-beginning 0) xah-find-context-char-number )))
+             (setq ξp2 (min (point-max) (+ (match-end 0) xah-find-context-char-number )))
              (when φprintContext-p (xah-print-text-block (buffer-substring-no-properties ξp1 ξp2 ))))
            (when (> ξcount 0)
-             (xah-print-file-count ξpath ξcount))))
-       (find-lisp-find-files φinput-dir φpath-regex))
+             (xah-find--print-file-count ξpath ξcount))))
+
+       (xah-find--filter-list
+        (lambda (x)
+          (not (xah-find--ignore-dir-p x)))
+        (find-lisp-find-files φinput-dir φpath-regex)))
 
       (switch-to-buffer ξoutputBuffer)
       (buffer-enable-undo)
@@ -135,6 +192,7 @@ Path Regex 「%s」
       (highlight-phrase (regexp-quote φsearch-str1) (quote hi-yellow))
       (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
+;;;###autoload
 (defun xah-find-text-regex (φsearch-regex φinput-dir φpath-regex φfixed-case-search-p φprint-context-level )
   "Report files that contain a string pattern, similar to unix grep."
   (interactive
@@ -161,7 +219,7 @@ Search regex 「%s」
 Directory 「%s」
 Path Regex 「%s」
 
-" (xah-current-date-time-string) φsearch-regex φinput-dir φpath-regex))
+" (xah-find--current-date-time-string) φsearch-regex φinput-dir φpath-regex))
       (mapc
        (lambda (ξfp)
          (setq ξcount 0)
@@ -175,12 +233,15 @@ Path Regex 「%s」
               ((equal φprint-context-level "1") (xah-print-text-block (match-string 0)))
               ((equal φprint-context-level "2")
                (progn
-                 (setq ξpos1 (max 1 (- (match-beginning 0) xah-context-char-number )))
-                 (setq ξpos2 (min (point-max) (+ (match-end 0) xah-context-char-number )))
+                 (setq ξpos1 (max 1 (- (match-beginning 0) xah-find-context-char-number )))
+                 (setq ξpos2 (min (point-max) (+ (match-end 0) xah-find-context-char-number )))
                  (xah-print-text-block (buffer-substring-no-properties ξpos1 ξpos2 ))))))
            (when (> ξcount 0)
-             (xah-print-file-count ξfp ξcount))))
-       (find-lisp-find-files φinput-dir φpath-regex))
+             (xah-find--print-file-count ξfp ξcount))))
+       (xah-find--filter-list
+        (lambda (x)
+          (not (xah-find--ignore-dir-p x)))
+        (find-lisp-find-files φinput-dir φpath-regex)))
 
       (switch-to-buffer ξoutputBuffer)
       (buffer-enable-undo)
@@ -189,6 +250,7 @@ Path Regex 「%s」
       (highlight-phrase φsearch-regex (quote hi-yellow))
       (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
+;;;###autoload
 (defun xah-find-replace-text (φsearch-str φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p &optional φbackup-p)
   "Find/Replace string in all files of a directory.
 SearchStr can span multiple lines.
@@ -206,7 +268,7 @@ No regex."
 
   (let (
         (ξoutputBuffer "*xah-find-replace-text output*")
-        (ξbackupSuffix (xah--backup-suffix "t")))
+        (ξbackupSuffix (xah-find--backup-suffix "t")))
 
     (with-temp-buffer-window
      ;; with-output-to-temp-buffer
@@ -220,7 +282,7 @@ Search string 「%s」
 Replace string 『%s』
 Directory 〔%s〕
 
-" (xah-current-date-time-string) φsearch-str φreplace-str φinput-dir))
+" (xah-find--current-date-time-string) φsearch-str φreplace-str φinput-dir))
      (mapc
       (lambda (ξf)
         (let ( (case-fold-search (not φfixed-case-search-p))
@@ -232,15 +294,18 @@ Directory 〔%s〕
               (setq ξcount (1+ ξcount))
               (xah-print-text-block
                (buffer-substring-no-properties
-                (max 1 (- (match-beginning 0) xah-context-char-number ))
-                (min (point-max) (+ (point) xah-context-char-number )))))
+                (max 1 (- (match-beginning 0) xah-find-context-char-number ))
+                (min (point-max) (+ (point) xah-find-context-char-number )))))
 
             (when (> ξcount 0)
               (when φwrite-to-file-p
                 (when φbackup-p (copy-file ξf (concat ξf ξbackupSuffix) t))
                 (write-region 1 (point-max) ξf))
-              (xah-print-file-count ξf ξcount )))))
-      (find-lisp-find-files φinput-dir φpath-regex))
+              (xah-find--print-file-count ξf ξcount )))))
+      (xah-find--filter-list
+       (lambda (x)
+         (not (xah-find--ignore-dir-p x)))
+       (find-lisp-find-files φinput-dir φpath-regex)))
      (princ "Done."))
     (switch-to-buffer ξoutputBuffer)
     (delete-other-windows)
@@ -252,6 +317,7 @@ Directory 〔%s〕
         (highlight-phrase (regexp-quote φreplace-str) (quote hi-yellow)))
       (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
+;;;###autoload
 (defun xah-find-replace-text-regex (φregex φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p)
   "Find/Replace by regex in all files of a directory.
 
@@ -275,7 +341,7 @@ Directory 〔%s〕
 
   (let (
         (ξoutputBuffer "*xah-find-replace-text-regex output*")
-        (ξbackupSuffix (xah--backup-suffix "r")))
+        (ξbackupSuffix (xah-find--backup-suffix "r")))
     (with-output-to-temp-buffer ξoutputBuffer
       (princ (format "-*- coding: utf-8 -*-
 %s
@@ -284,12 +350,12 @@ Search string 「%s」
 Replace with 『%s』
 Directory 〔%s〕
 
-" (xah-current-date-time-string) φregex φreplace-str φinput-dir))
+" (xah-find--current-date-time-string) φregex φreplace-str φinput-dir))
       (mapc
        (lambda (ξfp)
          (let (
-                (ξcount 0)
-                ξmatchStrFound ξmatchStrReplaced )
+               (ξcount 0)
+               ξmatchStrFound ξmatchStrReplaced )
 
            (when t
              (with-temp-buffer
@@ -308,8 +374,10 @@ Directory 〔%s〕
                    (copy-file ξfp (concat ξfp ξbackupSuffix) t)
                    (write-region 1 (point-max) ξfp))
                  (princ (format "• %d %s\n" ξcount ξfp)))))))
-
-       (find-lisp-find-files φinput-dir "\\.html$"))
+       (xah-find--filter-list
+        (lambda (x)
+          (not (xah-find--ignore-dir-p x)))
+        (find-lisp-find-files φinput-dir φpath-regex)))
       (princ "Done ☺"))
 
     (switch-to-buffer ξoutputBuffer)
@@ -321,6 +389,7 @@ Directory 〔%s〕
         (highlight-phrase (regexp-quote φregex) (quote hi-yellow)))
       (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
+;;;###autoload
 (defun xah-find-count (φsearch-str φcount-expr φcount-number φinput-dir φpath-regex)
   "Report how many occurances of a string, of a given dir.
 Similar to grep, written in elisp.
@@ -357,7 +426,7 @@ Count expression: 「%s %s」
 Input dir: 「%s」
 Path regex: 「%s」
 "
-                     (xah-current-date-time-string) φsearch-str φcount-expr φcount-number φinput-dir φpath-regex))
+                     (xah-find--current-date-time-string) φsearch-str φcount-expr φcount-number φinput-dir φpath-regex))
       (mapc
        (lambda (ξf)
          (let ((ξcount 0))
@@ -373,7 +442,10 @@ Path regex: 「%s」
                (when
                    (funcall ξcountOperator ξcount ξcountNumber)
                  (princ (format "• %d %s\n" ξcount ξf)))))))
-       (find-lisp-find-files φinput-dir "\\.html$"))
+       (xah-find--filter-list
+        (lambda (x)
+          (not (xah-find--ignore-dir-p x)))
+        (find-lisp-find-files φinput-dir φpath-regex)))
       (princ "Done deal!"))
 
     (switch-to-buffer ξoutputBuffer)
@@ -384,3 +456,5 @@ Path regex: 「%s」
     (highlight-lines-matching-regexp "^• " (quote hi-pink))))
 
 (provide 'xah_file_util)
+
+;;; xah_file_util.el ends here
