@@ -1,4 +1,4 @@
-;;; xah_file_util.el --- xah's misc elisp utility similar to unix grep/sed. -*- coding: utf-8 -*-
+;;; xah-find.el --- xah's misc elisp utility similar to unix grep/sed. -*- coding: utf-8 -*-
 
 ;; Copyright © 2012 by Xah Lee
 
@@ -23,7 +23,7 @@
 ;; xah-find-replace-text       → sed
 ;; xah-find-replace-text-regex → sed
 
-;; Note: the commands here is not exactly modeled on unix grep.
+;; Note: the commands here is not modeled on unix grep.
 ;; in unix grep, it's based on lines. If a string happens twice in a line, that line will be reported only once (with the occurences highlighted).
 ;; the output of commands of this package is not based on lines.
 ;; there will be 50 chars showing before and after the searched text or pattern.
@@ -41,6 +41,8 @@
 
 ;;; HISTORY
 
+;; 2015-05-20 changes won't be logged here anymore, unless incompatible change.
+;; version 2.0.0, 2015-05-20 • major rewrite and rename. prepare for MELPA
 ;; version 1.6.9, 2014-05-29 • turned on undo in output buffer
 ;; version 1.6.8, 2013-07-05 • More options added to “xah-find-text”, “xah-find-text-regex”, “xah-find-replace-text”. Output format improved. Much code refactoring.
 ;; version 1.6.7, 2013-06-17 • WARNING the argument for case search is reversed for xah-find-replace-text-regex. • added a case search option for xah-find-text-regex
@@ -61,16 +63,15 @@
 
 ;;; Code:
 
-(require 'hi-lock) ; in emacs
 (require 'find-lisp) ; in emacs
-;; (require 'xeu_elisp_util) ; todo double check if this is used
+(require 'hi-lock) ; in emacs
 
-(defcustom xah-find-context-char-number 100 "number of characters to print before and after a search string."
-:group 'xah_file_util
+(defcustom xah-find-context-char-number 100 "Number of characters to print before and after a search string."
+:group 'xah-find
 )
 
 (defcustom xah-find-dir-ignore-regex-list nil "A list or vector of regex patterns, if match, that directory will be ignored. Case is dependent on current value of `case-fold-search'"
-:group 'xah_file_util
+:group 'xah-find
 )
 (setq
  xah-find-dir-ignore-regex-list
@@ -109,10 +110,10 @@ Note: φlist should not have a element equal to the string \"e3824ad41f2ec1ed\".
 
 (defun xah-find--ignore-dir-p (φpath)
   "Return true if φpath should be ignored. Else, nil."
-  (catch 'bbb
+  (catch 'catch25001
     (mapc
      (lambda (x)
-       (when (string-match x φpath) (throw 'bbb x)))
+       (when (string-match x φpath) (throw 'catch25001 x)))
      xah-find-dir-ignore-regex-list)
     nil
     ))
@@ -121,7 +122,7 @@ Note: φlist should not have a element equal to the string \"e3824ad41f2ec1ed\".
   "Return a string of the form 「~‹φs›~‹date-time-stamp›~」"
   (concat "~" φs "~" (format-time-string "%Y%m%d_%H%M%S") "~"))
 
-(defun xah-print-text-block (φstring9462)
+(defun xah-find--print-text-block (φstring9462)
   "print string9462"
   (princ (format "「%s」
 " φstring9462)))
@@ -176,7 +177,7 @@ Path Regex 「%s」
              (setq ξcount (1+ ξcount))
              (setq ξp1 (max 1 (- (match-beginning 0) xah-find-context-char-number )))
              (setq ξp2 (min (point-max) (+ (match-end 0) xah-find-context-char-number )))
-             (when φprintContext-p (xah-print-text-block (buffer-substring-no-properties ξp1 ξp2 ))))
+             (when φprintContext-p (xah-find--print-text-block (buffer-substring-no-properties ξp1 ξp2 ))))
            (when (> ξcount 0)
              (xah-find--print-file-count ξpath ξcount))))
 
@@ -230,12 +231,12 @@ Path Regex 「%s」
              (setq ξcount (1+ ξcount))
              (cond
               ((equal φprint-context-level "0") nil)
-              ((equal φprint-context-level "1") (xah-print-text-block (match-string 0)))
+              ((equal φprint-context-level "1") (xah-find--print-text-block (match-string 0)))
               ((equal φprint-context-level "2")
                (progn
                  (setq ξpos1 (max 1 (- (match-beginning 0) xah-find-context-char-number )))
                  (setq ξpos2 (min (point-max) (+ (match-end 0) xah-find-context-char-number )))
-                 (xah-print-text-block (buffer-substring-no-properties ξpos1 ξpos2 ))))))
+                 (xah-find--print-text-block (buffer-substring-no-properties ξpos1 ξpos2 ))))))
            (when (> ξcount 0)
              (xah-find--print-file-count ξfp ξcount))))
        (xah-find--filter-list
@@ -292,7 +293,7 @@ Directory 〔%s〕
             (while (search-forward φsearch-str nil t)
               (replace-match φreplace-str φfixed-case-replace-p "literalreplace")
               (setq ξcount (1+ ξcount))
-              (xah-print-text-block
+              (xah-find--print-text-block
                (buffer-substring-no-properties
                 (max 1 (- (match-beginning 0) xah-find-context-char-number ))
                 (min (point-max) (+ (point) xah-find-context-char-number )))))
@@ -455,6 +456,6 @@ Path regex: 「%s」
     (highlight-phrase φsearch-str (quote hi-yellow))
     (highlight-lines-matching-regexp "^• " (quote hi-pink))))
 
-(provide 'xah_file_util)
+(provide 'xah-find)
 
-;;; xah_file_util.el ends here
+;;; xah-find.el ends here
