@@ -1,43 +1,63 @@
-;;; xah-find.el --- xah's misc elisp utility similar to unix grep/sed. -*- coding: utf-8 -*-
+;;; xah-find.el --- find replace in pure emacs lisp. Purpose similar to unix grep/sed.
 
-;; Copyright © 2012 by Xah Lee
+;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Created: 2012-04-02
-;; Keywords: emacs lisp, utility, file
+;; Version: 2.0.1
+;; Created: 02 April 2012
+;; Keywords: convenience, extensions, files, tools, unix
 
-;; You can redistribute this program and/or modify it. Please give credit and link. Thanks.
+;; This file is not part of GNU Emacs.
 
-;;; DESCRIPTION
+;;; License:
 
-;; this package is some misc emacs commands for find or find/replace on multiple files. It's similar in purpose to unix's {grep, sed}. It's entirely in emacs lisp.
+;; You can redistribute this program and/or modify it under the terms of the GNU General Public License version 2.
 
-;; The reason it's written because it avoids many problems when running emacs on Windows (e.g. no grep, lots problems interfacing with Windows ports of grep, unicode or encoding problems, emacs regex vs unix regex syntax mismatch for user, …, etc. See http://ergoemacs.org/emacs/emacs_grep_problem.html )
+;;; Commentary:
 
-;; currently, this package is in alpha stage. I use it daily for months, but lots improvement in documentation and coding can be made.
+;; provides emacs commands for find/replace. Similar to {grep, sed}, but entirely written emacs lisp.
 
-;; This package exports the follow functions:
-;; xah-find-text               → grep
-;; xah-find-text-regex         → regex grep
-;; xah-find-count              → grep count
-;; xah-find-replace-text       → sed
-;; xah-find-replace-text-regex → sed
+;; This package provides the follow functions:
 
-;; Note: the commands here is not modeled on unix grep.
-;; in unix grep, it's based on lines. If a string happens twice in a line, that line will be reported only once (with the occurences highlighted).
+;; xah-find-text                → grep
+;; xah-find-text-regex          → regex grep
+;; xah-find-count               → grep count
+;; xah-find-replace-text        → sed
+;; xah-find-replace-text-regex  → sed
+
+;; This package is most useful when:
+
+;; • On Windows and don't have unix find/grep/sed utils installed.
+;; • Process lots Unicode chars. See  http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
+;; • You want to use emacs regex, not shell's regex.
+
 ;; the output of commands of this package is not based on lines.
-;; there will be 50 chars showing before and after the searched text or pattern.
+;; there will be n chars showing before and after the searched text or pattern.
 ;; the number of chars to show is defined by `xah-find-context-char-number'
 ;; each “block of text” in output is one occurrence.
 ;; for example, if a line in a file has 2 occurrences, then the same line will be reported twice, as 2 “blocks”.
 ;; so, the number of blocks corresponds exactly to the number of occurrences.
 
-;; donate $5 please. Paypal to xah@xahlee.org , thanks.
+;; This package is still beta. The output, isn't beautiful. You can't click to jump to file location. (use `ffap' instead, and the highlight is clunky (am using `highlight-lines-matching-regexp' instead of coding my own text properties))
 
-;; 2015-05-20 major todo.
-;; the feeble find-lisp-find-files is becoming a pain. And, there's no alternative except some “modern” API third-party shiny thing
+;; But i've been using it for 2 years, every week, on linux (and Windows), without using unix's grep/sed. (because i need to find/replace lots long strings that contains unicode, and is not line based.)
+
+;; Do you find it useful? Please support it by
+;; Buy Xah Emacs Tutorial
+;; http://ergoemacs.org/emacs/buy_xah_emacs_tutorial.html
 
 ;;; INSTALL
+
+;; To install manually, place this file in the directory 〔~/.emacs.d/lisp/〕
+
+;; Then, place the following code in your emacs init file
+
+;; (add-to-list 'load-path "~/.emacs.d/lisp/")
+;; (autoload 'xah-find-text "xah-find" "find replace" t)
+;; (autoload 'xah-find-text-regex "xah-find" "find replace" t)
+;; (autoload 'xah-find-replace-text "xah-find" "find replace" t)
+;; (autoload 'xah-find-replace-text-regex "xah-find" "find replace" t)
+;; (autoload 'xah-find-count "xah-find" "find replace" t)
 
 ;;; HISTORY
 
@@ -60,6 +80,9 @@
 ;; version 1.1, 2012-05-11 modified xah-find-text so that same line are not printed.
 ;; version 1.0, 2012-04-02 First version.
 
+;;; TODO:
+;; 2015-05-20 the feeble find-lisp-find-files is becoming a efficiency pain. It uses one regex to list all files, then you have to filter dir. And, there's no alternative except some “modern” API third-party shiny thing
+
 
 ;;; Code:
 
@@ -77,18 +100,23 @@
  xah-find-dir-ignore-regex-list
  [
   "\\.git/"
-  "xahlee_info/clojure-doc-1.6/"
-  "xahlee_info/css_2.1_spec/"
-  "xahlee_info/css_3_color_spec/"
-  "xahlee_info/css3_spec_bg/"
-  "xahlee_info/css_transitions/"
-  "xahlee_info/dom-whatwg/"
-  "xahlee_info/git-bottomup/"
-  "xahlee_info/java8_doc/"
-  "xahlee_info/javascript_ecma-262_5.1_2011/"
-  "xahlee_info/jquery_doc/"
-  "xahlee_info/node_api/"
+
   "xahlee_info/php-doc/"
+  "xahlee_info/node_api/"
+  "xahlee_info/java8_doc/"
+  "xahlee_info/css_transitions/"
+  "xahlee_info/css3_spec_bg/"
+  "xahlee_info/css_3_color_spec/"
+  "xahlee_info/REC-SVG11-20110816/"
+  "xahlee_info/python_doc_3.3.3/"
+  "xahlee_info/python_doc_2.7.6/"
+  "xahlee_info/jquery_doc/"
+  "xahlee_info/javascript_ecma-262_5.1_2011/"
+  "xahlee_info/git-bottomup/"
+  "xahlee_info/dom-whatwg/"
+  "xahlee_info/css_2.1_spec/"
+  "xahlee_info/clojure-doc-1.6/"
+
   ])
 
 (defun xah-find--current-date-time-string ()
@@ -246,8 +274,8 @@ Path Regex 「%s」
 
       (switch-to-buffer ξoutputBuffer)
       (buffer-enable-undo)
-      (hi-lock-mode 0)
-      (funcall 'fundamental-mode)
+      (fundamental-mode)
+      (hi-lock-mode) ; todo: implement my own coloring
       (highlight-phrase φsearch-regex (quote hi-yellow))
       (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
 
@@ -307,12 +335,12 @@ Directory 〔%s〕
        (lambda (x)
          (not (xah-find--ignore-dir-p x)))
        (find-lisp-find-files φinput-dir φpath-regex)))
-     (princ "Done."))
+     (princ "Done"))
     (switch-to-buffer ξoutputBuffer)
-    (delete-other-windows)
-    ;; (hi-lock-mode -1) ; dunno what the heck is this here for
-    (fundamental-mode)
     (buffer-enable-undo)
+    (fundamental-mode)
+    (hi-lock-mode) ; todo: implement my own coloring
+    (delete-other-windows)
     (progn
       (when (not (string= φreplace-str ""))
         (highlight-phrase (regexp-quote φreplace-str) (quote hi-yellow)))
@@ -379,12 +407,12 @@ Directory 〔%s〕
         (lambda (x)
           (not (xah-find--ignore-dir-p x)))
         (find-lisp-find-files φinput-dir φpath-regex)))
-      (princ "Done ☺"))
+      (princ "Done"))
 
     (switch-to-buffer ξoutputBuffer)
     (buffer-enable-undo)
-    (hi-lock-mode 0)
-    (funcall 'fundamental-mode)
+    (fundamental-mode)
+    (hi-lock-mode) ; todo: implement my own coloring
     (progn
       (when (not (string= φreplace-str ""))
         (highlight-phrase (regexp-quote φregex) (quote hi-yellow)))
@@ -400,7 +428,10 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
    (let* ( ξoperator)
      (list
       (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word))
-      (setq ξoperator (ido-completing-read "Greater less equal unqual:" '("<" ">" "<=" ">=" "=" "/=")))
+      (setq ξoperator
+            (ido-completing-read
+             "Report on:"
+             '("less than" "greater than" "less or equal to" "greater or equal to" "equal" "not equal")))
       (read-string (format "Count %s: "  ξoperator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
       (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history))))
@@ -409,12 +440,13 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
          (ξoutputBuffer "*xah-find-count output*")
          (ξcountOperator
           (cond
-           ((string-equal "<" φcount-expr ) '<)
-           ((string-equal "<=" φcount-expr ) '<=)
-           ((string-equal ">" φcount-expr ) '>)
-           ((string-equal ">=" φcount-expr ) '>=)
-           ((string-equal "=" φcount-expr ) '=)
-           ((string-equal "/=" φcount-expr ) '/=)
+
+           ((string-equal "less than" φcount-expr ) '<)
+           ((string-equal "less or equal to" φcount-expr ) '<=)
+           ((string-equal "greater than" φcount-expr ) '>)
+           ((string-equal "greater or equal to" φcount-expr ) '>=)
+           ((string-equal "equal" φcount-expr ) '=)
+           ((string-equal "not equal" φcount-expr ) '/=)
            (t (error "your count expression 「%s」 is wrong!" φcount-expr ))))
          (ξcountNumber (string-to-number φcount-number)))
 
@@ -447,12 +479,12 @@ Path regex: 「%s」
         (lambda (x)
           (not (xah-find--ignore-dir-p x)))
         (find-lisp-find-files φinput-dir φpath-regex)))
-      (princ "Done deal!"))
+      (princ "Done"))
 
     (switch-to-buffer ξoutputBuffer)
     (buffer-enable-undo)
-    (hi-lock-mode 0)
-    (funcall 'fundamental-mode)
+    (fundamental-mode)
+    (hi-lock-mode) ; todo: implement my own coloring
     (highlight-phrase φsearch-str (quote hi-yellow))
     (highlight-lines-matching-regexp "^• " (quote hi-pink))))
 
