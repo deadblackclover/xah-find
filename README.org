@@ -1,0 +1,19 @@
+A emacs packages for find replace, written in pure emacs lisp. Purpose similar to unix grep/sed.
+
+This package provides the follow functions:
+
+xah-find-text                → grep
+xah-find-text-regex          → regex grep
+xah-find-count               → grep count
+xah-find-replace-text        → sed
+xah-find-replace-text-regex  → sed
+
+This package is most useful when:
+
+• On Windows and don't have unix find/grep/sed utils installed.
+
+• Process lots Unicode chars. 
+See http://xahlee.info/comp/unix_uniq_unicode_bug.html 
+and http://ergoemacs.org/emacs/emacs_grep_problem.html
+
+• You want to use emacs regex, not shell's regex.
