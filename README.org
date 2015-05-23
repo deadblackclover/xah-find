@@ -1,4 +1,4 @@
-A emacs packages for find replace, written in pure emacs lisp. Purpose similar to unix grep/sed.
+A emacs package for find replace, written in pure emacs lisp. Purpose similar to unix grep/sed.
 
 This package provides the follow functions:
 

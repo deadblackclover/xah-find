@@ -15,34 +15,54 @@
 
 ;;; Commentary:
 
-;; provides emacs commands for find/replace. Similar to {grep, sed}, but entirely written emacs lisp.
+;; Provides emacs commands for find/replace. Similar to {grep, sed}, but entirely written emacs lisp.
 
 ;; This package provides the follow functions:
 
-;; xah-find-text                → grep
-;; xah-find-text-regex          → regex grep
-;; xah-find-count               → grep count
-;; xah-find-replace-text        → sed
-;; xah-find-replace-text-regex  → sed
+;; xah-find-text                → like grep
+;; xah-find-text-regex          → like regex grep
+;; xah-find-count               → like grep count
+;; xah-find-replace-text        → like sed
+;; xah-find-replace-text-regex  → like sed
 
 ;; This package is most useful when:
 
 ;; • On Windows and don't have unix find/grep/sed utils installed.
+
 ;; • Process lots Unicode chars. See  http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
+
+;; • Process string that contains linebreaks.
+
 ;; • You want to use emacs regex, not shell's regex.
 
-;; the output of commands of this package is not based on lines.
-;; there will be n chars showing before and after the searched text or pattern.
-;; the number of chars to show is defined by `xah-find-context-char-number'
+;; These commands treat a file as sequence of chars, not as lines as in sed, so it's much more easier to find or replace char sequences.
+
+;; The printed report is also not based on lines. Instead, visual separator are used for easy reading.
+
+;; For each occurance or replacement, n chars will be printed before and after. The number of chars to show is defined by `xah-find-print-before' and `xah-find-print-after'
+
 ;; each “block of text” in output is one occurrence.
 ;; for example, if a line in a file has 2 occurrences, then the same line will be reported twice, as 2 “blocks”.
 ;; so, the number of blocks corresponds exactly to the number of occurrences.
 
-;; This package is still beta. The output, isn't beautiful. You can't click to jump to file location. (use `ffap' instead, and the highlight is clunky (am using `highlight-lines-matching-regexp' instead of coding my own text properties))
+;; Ignore directories.
+;; Add the following in your init:
 
-;; But i've been using it for 2 years, every week, on linux (and Windows), without using unix's grep/sed. (because i need to find/replace lots long strings that contains unicode, and is not line based.)
+;; (setq
+;;  xah-find-dir-ignore-regex-list
+;;  [
+;;   "\\.git/"
+;;    ; more path regex here
+;;   ])
 
-;; Do you find it useful? Please support it by
+;; TODO:
+;; The output isn't beautiful. May be hard to read.
+;; File path in output isn't clickable. (use M-x `ffap' for now.)
+;; Highlighting is clunky (am using `highlight-lines-matching-regexp' instead of coding my own text properties)
+
+;; I've been using this for 2 years, about every week, on linux (and Windows), on 5 thousand HTML files.
+
+;; Do you find it useful? Help me make it better.
 ;; Buy Xah Emacs Tutorial
 ;; http://ergoemacs.org/emacs/buy_xah_emacs_tutorial.html
 
@@ -89,13 +109,19 @@
 (require 'find-lisp) ; in emacs
 (require 'hi-lock) ; in emacs
 
-(defcustom xah-find-context-char-number 100 "Number of characters to print before and after a search string."
-:group 'xah-find
-)
+(defcustom xah-find-print-before 100 "Number of characters to print before search string."
+  :group 'xah-find
+  )
+(setq xah-find-print-before 100)
+
+(defcustom xah-find-print-after 30 "Number of characters to print after search string."
+  :group 'xah-find
+  )
+(setq xah-find-print-after 30)
 
 (defcustom xah-find-dir-ignore-regex-list nil "A list or vector of regex patterns, if match, that directory will be ignored. Case is dependent on current value of `case-fold-search'"
-:group 'xah-find
-)
+  :group 'xah-find
+  )
 (setq
  xah-find-dir-ignore-regex-list
  [
@@ -119,22 +145,27 @@
 
   ])
 
-(defun xah-find--current-date-time-string ()
-  "Returns current date-time string in full ISO 8601 format.
-Example: 「2012-04-05T21:08:24-07:00」.
+(defcustom xah-find-separator nil "A string that act as separator."
+  :group 'xah-find
+  )
+(setq
+ xah-find-separator
+ "88--------------------------------------------------\n")
 
-Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are valid ISO 8601. However, Atom Webfeed spec seems to require 「hh:mm」."
-  (concat
-   (format-time-string "%Y-%m-%dT%T")
-   ((lambda (ξx) (format "%s:%s" (substring ξx 0 3) (substring ξx 3 5))) (format-time-string "%z"))))
+
 
-(defun xah-find--filter-list (φpredicate φlist)
-  "Return a new list such that φpredicate is true on all members of φlist.
-Note: φlist should not have a element equal to the string \"e3824ad41f2ec1ed\"."
-  (let ((ξresult (mapcar (lambda (ξx) (if (funcall φpredicate ξx) ξx "e3824ad41f2ec1ed" )) φlist)))
-    (setq ξresult (delete "e3824ad41f2ec1ed" ξresult))
-    ξresult
-    ))
+(defun xah-find--filter-list (φpredicate φsequence)
+  "Return a new list such that φpredicate is true on all members of φsequence.
+URL `http://ergoemacs.org/emacs/elisp_filter_list.html'
+Version 2015-05-23"
+  (delete
+   "e3824ad41f2ec1ed"
+   (mapcar
+    (lambda (ξx)
+      (if (funcall φpredicate ξx)
+          ξx
+        "e3824ad41f2ec1ed" ))
+    φsequence)))
 
 (defun xah-find--ignore-dir-p (φpath)
   "Return true if φpath should be ignored. Else, nil."
@@ -146,18 +177,61 @@ Note: φlist should not have a element equal to the string \"e3824ad41f2ec1ed\".
     nil
     ))
 
+
+
 (defun xah-find--backup-suffix (φs)
-  "Return a string of the form 「~‹φs›~‹date-time-stamp›~」"
-  (concat "~" φs "~" (format-time-string "%Y%m%d_%H%M%S") "~"))
+  "Return a string of the form 「~‹φs›~‹date time stamp›~」"
+  (concat "~" φs (format-time-string "%Y%m%d%H%M%S") "~"))
+
+(defun xah-find--current-date-time-string ()
+  "Returns current date-time string in full ISO 8601 format.
+Example: 「2012-04-05T21:08:24-07:00」.
+
+Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are valid ISO 8601. However, Atom Webfeed spec seems to require 「hh:mm」."
+  (concat
+   (format-time-string "%Y-%m-%dT%T")
+   ((lambda (ξx) (format "%s:%s" (substring ξx 0 3) (substring ξx 3 5))) (format-time-string "%z"))))
+
+(defun xah-find--print-header (φinput-dir φsearch-str φreplace-str )
+  "Print things"
+  (interactive)
+  (princ
+   (concat
+    "-*- coding: utf-8 -*-" "\n"
+    "Datetime: " (xah-find--current-date-time-string) "\n"
+    "Result of: " (symbol-name real-this-command) "\n"
+    (format "Directory %s\n" φinput-dir )
+    (format "Search string 「%s」\n" φsearch-str )
+    (format "Replace string 『%s』\n" φreplace-str)
+    xah-find-separator
+    )))
 
 (defun xah-find--print-text-block (φstring9462)
   "print string9462"
-  (princ (format "「%s」
-" φstring9462)))
+  (princ (format "\n「%s」\n\n" φstring9462)))
 
 (defun xah-find--print-file-count (φfilepath4287 φcount8086)
   "Print file path and count"
   (princ (format "• %d %s\n" φcount8086 φfilepath4287 )))
+
+(defun xah-find--switch-and-highlight (φbuffer φhi-str &optional φuse-regex-p)
+  "switch to φbuffer and highlight stuff"
+  (interactive)
+  (progn
+    (switch-to-buffer φbuffer)
+    (delete-other-windows)
+    (fundamental-mode)
+    (hi-lock-mode) ; todo: implement my own coloring
+    (buffer-enable-undo)
+    (when (not (string= φhi-str ""))
+      (highlight-phrase
+       (if φuse-regex-p
+           φhi-str
+         (regexp-quote φhi-str))
+       (quote hi-yellow)))
+    (highlight-lines-matching-regexp "^• " (quote hi-pink))))
+
+
 
 ;;;###autoload
 (defun xah-find-text (φsearch-str1 φinput-dir φpath-regex φfixed-case-search-p φprintContext-p)
@@ -180,7 +254,7 @@ If `universal-argument' is called first, prompt to ask."
   (let (
         (case-fold-search (not φfixed-case-search-p))
         (ξcount 0)
-        (ξoutputBuffer "*xah-find-text output*")
+        (ξoutputBuffer "*xah-find output*")
         ξp1 ; context begin position
         ξp2 ; context end position
         )
@@ -203,8 +277,8 @@ Path Regex 「%s」
            (insert-file-contents ξpath)
            (while (search-forward φsearch-str1 nil "NOERROR")
              (setq ξcount (1+ ξcount))
-             (setq ξp1 (max 1 (- (match-beginning 0) xah-find-context-char-number )))
-             (setq ξp2 (min (point-max) (+ (match-end 0) xah-find-context-char-number )))
+             (setq ξp1 (max 1 (- (match-beginning 0) xah-find-print-before )))
+             (setq ξp2 (min (point-max) (+ (match-end 0) xah-find-print-after )))
              (when φprintContext-p (xah-find--print-text-block (buffer-substring-no-properties ξp1 ξp2 ))))
            (when (> ξcount 0)
              (xah-find--print-file-count ξpath ξcount))))
@@ -214,12 +288,7 @@ Path Regex 「%s」
           (not (xah-find--ignore-dir-p x)))
         (find-lisp-find-files φinput-dir φpath-regex)))
 
-      (switch-to-buffer ξoutputBuffer)
-      (buffer-enable-undo)
-      (fundamental-mode)
-      (hi-lock-mode) ; todo: implement my own coloring
-      (highlight-phrase (regexp-quote φsearch-str1) (quote hi-yellow))
-      (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
+      (xah-find--switch-and-highlight ξoutputBuffer φsearch-str1))))
 
 ;;;###autoload
 (defun xah-find-text-regex (φsearch-regex φinput-dir φpath-regex φfixed-case-search-p φprint-context-level )
@@ -234,7 +303,7 @@ Path Regex 「%s」
 
   (let (
         (ξcount 0)
-        (ξoutputBuffer "*xah-find-text-regex output*")
+        (ξoutputBuffer "*xah-find output*")
         (ξpos1 1) ; beginning of line
         (ξpos2 1))
 
@@ -262,8 +331,8 @@ Path Regex 「%s」
               ((equal φprint-context-level "1") (xah-find--print-text-block (match-string 0)))
               ((equal φprint-context-level "2")
                (progn
-                 (setq ξpos1 (max 1 (- (match-beginning 0) xah-find-context-char-number )))
-                 (setq ξpos2 (min (point-max) (+ (match-end 0) xah-find-context-char-number )))
+                 (setq ξpos1 (max 1 (- (match-beginning 0) xah-find-print-before )))
+                 (setq ξpos2 (min (point-max) (+ (match-end 0) xah-find-print-after )))
                  (xah-find--print-text-block (buffer-substring-no-properties ξpos1 ξpos2 ))))))
            (when (> ξcount 0)
              (xah-find--print-file-count ξfp ξcount))))
@@ -272,17 +341,12 @@ Path Regex 「%s」
           (not (xah-find--ignore-dir-p x)))
         (find-lisp-find-files φinput-dir φpath-regex)))
 
-      (switch-to-buffer ξoutputBuffer)
-      (buffer-enable-undo)
-      (fundamental-mode)
-      (hi-lock-mode) ; todo: implement my own coloring
-      (highlight-phrase φsearch-regex (quote hi-yellow))
-      (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
+      (xah-find--switch-and-highlight ξoutputBuffer φsearch-regex t))))
 
 ;;;###autoload
 (defun xah-find-replace-text (φsearch-str φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p &optional φbackup-p)
   "Find/Replace string in all files of a directory.
-SearchStr can span multiple lines.
+Search string can span multiple lines.
 No regex."
   (interactive
    (list
@@ -296,7 +360,7 @@ No regex."
     (y-or-n-p "Make backup?")))
 
   (let (
-        (ξoutputBuffer "*xah-find-replace-text output*")
+        (ξoutputBuffer "*xah-find output*")
         (ξbackupSuffix (xah-find--backup-suffix "t")))
 
     (with-temp-buffer-window
@@ -304,14 +368,7 @@ No regex."
      ξoutputBuffer
      nil
      nil
-     (princ (format "-*- coding: utf-8 -*-
-%s
-xah-find-replace-text result.
-Search string 「%s」
-Replace string 『%s』
-Directory 〔%s〕
-
-" (xah-find--current-date-time-string) φsearch-str φreplace-str φinput-dir))
+     (xah-find--print-header φinput-dir φsearch-str φreplace-str )
      (mapc
       (lambda (ξf)
         (let ( (case-fold-search (not φfixed-case-search-p))
@@ -323,8 +380,8 @@ Directory 〔%s〕
               (setq ξcount (1+ ξcount))
               (xah-find--print-text-block
                (buffer-substring-no-properties
-                (max 1 (- (match-beginning 0) xah-find-context-char-number ))
-                (min (point-max) (+ (point) xah-find-context-char-number )))))
+                (max 1 (- (match-beginning 0) xah-find-print-before ))
+                (min (point-max) (+ (point) xah-find-print-after )))))
 
             (when (> ξcount 0)
               (when φwrite-to-file-p
@@ -336,15 +393,8 @@ Directory 〔%s〕
          (not (xah-find--ignore-dir-p x)))
        (find-lisp-find-files φinput-dir φpath-regex)))
      (princ "Done"))
-    (switch-to-buffer ξoutputBuffer)
-    (buffer-enable-undo)
-    (fundamental-mode)
-    (hi-lock-mode) ; todo: implement my own coloring
-    (delete-other-windows)
-    (progn
-      (when (not (string= φreplace-str ""))
-        (highlight-phrase (regexp-quote φreplace-str) (quote hi-yellow)))
-      (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
+
+    (xah-find--switch-and-highlight ξoutputBuffer φreplace-str)))
 
 ;;;###autoload
 (defun xah-find-replace-text-regex (φregex φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p)
@@ -369,54 +419,46 @@ Directory 〔%s〕
     (y-or-n-p "Fixed case in replacement?")))
 
   (let (
-        (ξoutputBuffer "*xah-find-replace-text-regex output*")
+        (ξoutputBuffer "*xah-find output*")
         (ξbackupSuffix (xah-find--backup-suffix "r")))
     (with-output-to-temp-buffer ξoutputBuffer
-      (princ (format "-*- coding: utf-8 -*-
-%s
-xah-find-replace-text-regex result.
-Search string 「%s」
-Replace with 『%s』
-Directory 〔%s〕
-
-" (xah-find--current-date-time-string) φregex φreplace-str φinput-dir))
+      (xah-find--print-header φinput-dir φregex φreplace-str )
       (mapc
        (lambda (ξfp)
          (let (
                (ξcount 0)
                ξmatchStrFound ξmatchStrReplaced )
 
-           (when t
-             (with-temp-buffer
-               (insert-file-contents ξfp)
-               (setq case-fold-search (not φfixed-case-search-p))
-               (while (re-search-forward φregex nil t)
-                 (setq ξmatchStrFound (match-string 0))
-                 (replace-match φreplace-str φfixed-case-replace-p)
-                 (setq ξmatchStrReplaced (match-string 0))
-                 (setq ξcount (1+ ξcount))
-                 (princ (format "「%s」\n" ξmatchStrFound))
-                 (princ (format "『%s』\n" ξmatchStrReplaced)))
+           (with-temp-buffer
+             (insert-file-contents ξfp)
+             (setq case-fold-search (not φfixed-case-search-p))
+             (while (re-search-forward φregex nil t)
+               (setq ξmatchStrFound (match-string 0))
+               (replace-match φreplace-str φfixed-case-replace-p)
+               (setq ξmatchStrReplaced (match-string 0))
+               (setq ξcount (1+ ξcount))
+               (princ (format "「%s」\n" ξmatchStrFound))
+               (princ (format "『%s』\n" ξmatchStrReplaced)))
 
-               (when (> ξcount 0)
-                 (when φwrite-to-file-p
-                   (copy-file ξfp (concat ξfp ξbackupSuffix) t)
-                   (write-region 1 (point-max) ξfp))
-                 (princ (format "• %d %s\n" ξcount ξfp)))))))
+             (when (> ξcount 0)
+               (when φwrite-to-file-p
+                 (copy-file ξfp (concat ξfp ξbackupSuffix) t)
+                 (write-region 1 (point-max) ξfp))
+               (princ (format "• %d %s\n" ξcount ξfp))))))
        (xah-find--filter-list
         (lambda (x)
           (not (xah-find--ignore-dir-p x)))
         (find-lisp-find-files φinput-dir φpath-regex)))
       (princ "Done"))
 
-    (switch-to-buffer ξoutputBuffer)
-    (buffer-enable-undo)
-    (fundamental-mode)
-    (hi-lock-mode) ; todo: implement my own coloring
-    (progn
-      (when (not (string= φreplace-str ""))
-        (highlight-phrase (regexp-quote φregex) (quote hi-yellow)))
-      (highlight-lines-matching-regexp "^• " (quote hi-pink)))))
+    (xah-find--switch-and-highlight ξoutputBuffer φreplace-str)
+
+    ;; (progn
+    ;;   (when (not (string= φreplace-str ""))
+    ;;     (highlight-phrase (regexp-quote φregex) (quote hi-yellow)))
+    ;;   )
+
+    ))
 
 ;;;###autoload
 (defun xah-find-count (φsearch-str φcount-expr φcount-number φinput-dir φpath-regex)
@@ -431,13 +473,13 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
       (setq ξoperator
             (ido-completing-read
              "Report on:"
-             '("less than" "greater than" "less or equal to" "greater or equal to" "equal" "not equal")))
+             '("greater than" "greater or equal to" "equal" "not equal" "less than" "less or equal to" )))
       (read-string (format "Count %s: "  ξoperator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
       (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history))))
 
   (let* (
-         (ξoutputBuffer "*xah-find-count output*")
+         (ξoutputBuffer "*xah-find output*")
          (ξcountOperator
           (cond
 
@@ -463,30 +505,24 @@ Path regex: 「%s」
       (mapc
        (lambda (ξf)
          (let ((ξcount 0))
-           (when t
-             (with-temp-buffer
-               (insert-file-contents ξf)
-               (goto-char 1)
-               (while (search-forward φsearch-str nil "NOERROR if not found")
-                 ;; (princ (format "「%s」\n" (buffer-substring-no-properties (line-beginning-position) (line-end-position) )))
-                 (setq ξcount (1+ ξcount)))
+           (with-temp-buffer
+             (insert-file-contents ξf)
+             (goto-char 1)
+             (while (search-forward φsearch-str nil "NOERROR if not found")
+               ;; (princ (format "「%s」\n" (buffer-substring-no-properties (line-beginning-position) (line-end-position) )))
+               (setq ξcount (1+ ξcount)))
 
-               ;; report if the occurance is not n times
-               (when
-                   (funcall ξcountOperator ξcount ξcountNumber)
-                 (princ (format "• %d %s\n" ξcount ξf)))))))
+             ;; report if the occurance is not n times
+             (when
+                 (funcall ξcountOperator ξcount ξcountNumber)
+               (princ (format "• %d %s\n" ξcount ξf))))))
        (xah-find--filter-list
         (lambda (x)
           (not (xah-find--ignore-dir-p x)))
         (find-lisp-find-files φinput-dir φpath-regex)))
       (princ "Done"))
 
-    (switch-to-buffer ξoutputBuffer)
-    (buffer-enable-undo)
-    (fundamental-mode)
-    (hi-lock-mode) ; todo: implement my own coloring
-    (highlight-phrase φsearch-str (quote hi-yellow))
-    (highlight-lines-matching-regexp "^• " (quote hi-pink))))
+    (xah-find--switch-and-highlight ξoutputBuffer φsearch-str)))
 
 (provide 'xah-find)
 
