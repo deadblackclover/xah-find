@@ -200,7 +200,7 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
     "-*- coding: utf-8 -*-" "\n"
     "Datetime: " (xah-find--current-date-time-string) "\n"
     "Result of: " (symbol-name real-this-command) "\n"
-    (format "Directory ❮%s❯\n" φinput-dir )
+    (format "Directory 「%s」\n" φinput-dir )
     (format "Path regex ❮%s❯\n" φpath-regex )
     (format "Search string ❮%s❯\n" φsearch-str )
     (when φreplace-str
