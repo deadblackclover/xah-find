@@ -192,7 +192,7 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
    (format-time-string "%Y-%m-%dT%T")
    ((lambda (ξx) (format "%s:%s" (substring ξx 0 3) (substring ξx 3 5))) (format-time-string "%z"))))
 
-(defun xah-find--print-header (φinput-dir φpath-regex φsearch-str φreplace-str )
+(defun xah-find--print-header (φinput-dir φpath-regex φsearch-str &optional φreplace-str )
   "Print things"
   (interactive)
   (princ
@@ -264,7 +264,7 @@ If `universal-argument' is called first, prompt to ask."
     (setq φinput-dir (file-name-as-directory φinput-dir)) ; normalize dir path
 
     (with-output-to-temp-buffer ξoutputBuffer
-      (xah-find--print-header φinput-dir φpath-regex φsearch-str1 φreplace-str )
+      (xah-find--print-header φinput-dir φpath-regex φsearch-str1 )
       (mapc
        (lambda (ξpath)
          (setq ξcount 0)
