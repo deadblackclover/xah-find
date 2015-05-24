@@ -31,7 +31,7 @@
 
 ;; • Process lots Unicode chars. See  http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
 
-;; • Process string that contains linebreaks.
+;; • Find/Replace string that contains newline chars.
 
 ;; • You want to use emacs regex, not shell's regex.
 

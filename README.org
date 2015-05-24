@@ -2,11 +2,11 @@ A emacs package for find replace, written in pure emacs lisp. Purpose similar to
 
 This package provides the follow functions:
 
-xah-find-text                → grep
-xah-find-text-regex          → regex grep
-xah-find-count               → grep count
-xah-find-replace-text        → sed
-xah-find-replace-text-regex  → sed
+- xah-find-text                → like grep
+- xah-find-text-regex          → like regex grep
+- xah-find-count               → like grep count
+- xah-find-replace-text        → like sed
+- xah-find-replace-text-regex  → like sed
 
 This package is most useful when:
 
@@ -15,5 +15,7 @@ This package is most useful when:
 • Process lots Unicode chars. 
 See http://xahlee.info/comp/unix_uniq_unicode_bug.html 
 and http://ergoemacs.org/emacs/emacs_grep_problem.html
+
+• Find/Replace string that contains newline chars.
 
 • You want to use emacs regex, not shell's regex.
