@@ -200,17 +200,17 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
     "-*- coding: utf-8 -*-" "\n"
     "Datetime: " (xah-find--current-date-time-string) "\n"
     "Result of: " (symbol-name real-this-command) "\n"
-    (format "Directory 「%s」\n" φinput-dir )
-    (format "Path regex ❮%s❯\n" φpath-regex )
-    (format "Search string ❮%s❯\n" φsearch-str )
+    (format "Directory ［%s］\n" φinput-dir )
+    (format "Path regex ［%s］\n" φpath-regex )
+    (format "Search string ［%s］\n" φsearch-str )
     (when φreplace-str
-      (format "Replace string ❮%s❯\n" φreplace-str))
+      (format "Replace string ［%s］\n" φreplace-str))
     xah-find-separator
     )))
 
 (defun xah-find--print-text-block (φstring9462)
   "print string9462"
-  (princ (format "\n❮%s❯\n\n" φstring9462)))
+  (princ (format "\n［%s］\n\n" φstring9462)))
 
 (defun xah-find--print-file-count (φfilepath4287 φcount8086)
   "Print file path and count"
