@@ -150,7 +150,7 @@
   )
 (setq
  xah-find-separator
- "88--------------------------------------------------\n")
+ "---88--------------------------------------------------\n")
 
 
 
@@ -192,7 +192,7 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
    (format-time-string "%Y-%m-%dT%T")
    ((lambda (ξx) (format "%s:%s" (substring ξx 0 3) (substring ξx 3 5))) (format-time-string "%z"))))
 
-(defun xah-find--print-header (φinput-dir φsearch-str φreplace-str )
+(defun xah-find--print-header (φinput-dir φpath-regex φsearch-str φreplace-str )
   "Print things"
   (interactive)
   (princ
@@ -200,15 +200,17 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
     "-*- coding: utf-8 -*-" "\n"
     "Datetime: " (xah-find--current-date-time-string) "\n"
     "Result of: " (symbol-name real-this-command) "\n"
-    (format "Directory %s\n" φinput-dir )
-    (format "Search string 「%s」\n" φsearch-str )
-    (format "Replace string 『%s』\n" φreplace-str)
+    (format "Directory ❮%s❯\n" φinput-dir )
+    (format "Path regex ❮%s❯\n" φpath-regex )
+    (format "Search string ❮%s❯\n" φsearch-str )
+    (when φreplace-str
+      (format "Replace string ❮%s❯\n" φreplace-str))
     xah-find-separator
     )))
 
 (defun xah-find--print-text-block (φstring9462)
   "print string9462"
-  (princ (format "\n「%s」\n\n" φstring9462)))
+  (princ (format "\n❮%s❯\n\n" φstring9462)))
 
 (defun xah-find--print-file-count (φfilepath4287 φcount8086)
   "Print file path and count"
@@ -262,14 +264,7 @@ If `universal-argument' is called first, prompt to ask."
     (setq φinput-dir (file-name-as-directory φinput-dir)) ; normalize dir path
 
     (with-output-to-temp-buffer ξoutputBuffer
-      (princ (format "-*- coding: utf-8 -*-
-%s
-xah-find-text result.
-Search string 「%s」
-Directory 「%s」
-Path Regex 「%s」
-
-" (xah-find--current-date-time-string) φsearch-str1 φinput-dir φpath-regex))
+      (xah-find--print-header φinput-dir φpath-regex φsearch-str1 φreplace-str )
       (mapc
        (lambda (ξpath)
          (setq ξcount 0)
@@ -361,14 +356,10 @@ No regex."
 
   (let (
         (ξoutputBuffer "*xah-find output*")
-        (ξbackupSuffix (xah-find--backup-suffix "t")))
+        (ξbackupSuffix (xah-find--backup-suffix "xfrt")))
 
-    (with-temp-buffer-window
-     ;; with-output-to-temp-buffer
-     ξoutputBuffer
-     nil
-     nil
-     (xah-find--print-header φinput-dir φsearch-str φreplace-str )
+    (with-output-to-temp-buffer ξoutputBuffer
+     (xah-find--print-header φinput-dir φpath-regex φsearch-str φreplace-str )
      (mapc
       (lambda (ξf)
         (let ( (case-fold-search (not φfixed-case-search-p))
@@ -420,9 +411,9 @@ No regex."
 
   (let (
         (ξoutputBuffer "*xah-find output*")
-        (ξbackupSuffix (xah-find--backup-suffix "r")))
+        (ξbackupSuffix (xah-find--backup-suffix "xfrtr")))
     (with-output-to-temp-buffer ξoutputBuffer
-      (xah-find--print-header φinput-dir φregex φreplace-str )
+      (xah-find--print-header φinput-dir φpath-regex φregex φreplace-str )
       (mapc
        (lambda (ξfp)
          (let (
