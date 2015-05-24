@@ -283,7 +283,8 @@ If `universal-argument' is called first, prompt to ask."
           (not (xah-find--ignore-dir-p x)))
         (find-lisp-find-files φinput-dir φpath-regex)))
 
-      (xah-find--switch-and-highlight ξoutputBuffer φsearch-str1))))
+      (xah-find--switch-and-highlight ξoutputBuffer φsearch-str1)
+      (princ "Done"))))
 
 ;;;###autoload
 (defun xah-find-text-regex (φsearch-regex φinput-dir φpath-regex φfixed-case-search-p φprint-context-level )
