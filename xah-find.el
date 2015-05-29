@@ -56,6 +56,9 @@
 ;;   ])
 
 ;; TODO:
+;; • add tab key to jump to results. consider other, check prev/next tradition in debugger or such
+;; • add link jump to file, location
+;; • make sure ^L displays as line
 ;; The output isn't beautiful. May be hard to read.
 ;; File path in output isn't clickable. (use M-x `ffap' for now.)
 ;; Highlighting is clunky (am using `highlight-lines-matching-regexp' instead of coding my own text properties)
@@ -145,12 +148,13 @@
 
   ])
 
-(defcustom xah-find-separator nil "A string that act as separator."
+(defcustom xah-find-file-separator nil "A string that act as separator."
   :group 'xah-find
   )
 (setq
- xah-find-separator
- "---88--------------------------------------------------\n")
+ xah-find-file-separator
+ "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+ )
 
 
 
@@ -169,10 +173,10 @@ Version 2015-05-23"
 
 (defun xah-find--ignore-dir-p (φpath)
   "Return true if φpath should be ignored. Else, nil."
-  (catch 'catch25001
+  (catch 'exit25001
     (mapc
      (lambda (x)
-       (when (string-match x φpath) (throw 'catch25001 x)))
+       (when (string-match x φpath) (throw 'exit25001 x)))
      xah-find-dir-ignore-regex-list)
     nil
     ))
@@ -181,7 +185,7 @@ Version 2015-05-23"
 
 (defun xah-find--backup-suffix (φs)
   "Return a string of the form 「~‹φs›~‹date time stamp›~」"
-  (concat "~" φs (format-time-string "%Y%m%d%H%M%S") "~"))
+  (concat "~" φs (format-time-string "%Y%m%dT%H%M%S") "~"))
 
 (defun xah-find--current-date-time-string ()
   "Returns current date-time string in full ISO 8601 format.
@@ -205,8 +209,25 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
     (format "Search string ［%s］\n" φsearch-str )
     (when φreplace-str
       (format "Replace string ［%s］\n" φreplace-str))
-    xah-find-separator
+    xah-find-file-separator
     )))
+
+
+
+(defun xah-find--display-formfeed-as-line ()
+  "Modify a display-table that displays page-breaks prettily.
+If the buffer inside ΦWINDOW has `page-break-lines-mode' enabled,
+its display table will be modified as necessary."
+  ;; code borrowed from Steve Purcell's https://github.com/purcell/page-break-lines GPL
+  (progn
+    (unless buffer-display-table
+      (setq buffer-display-table (make-display-table)))
+    (let* (
+           (ξlinechar 9472)
+           (ξglyph (make-glyph-code ξlinechar))
+           (ξnew-display-entry (vconcat (make-list 60 ξglyph))))
+      (unless (equal ξnew-display-entry (elt buffer-display-table ?\^L))
+        (aset buffer-display-table ?\^L ξnew-display-entry)))))
 
 (defun xah-find--print-text-block (φstring9462)
   "print string9462"
@@ -214,7 +235,7 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
 
 (defun xah-find--print-file-count (φfilepath4287 φcount8086)
   "Print file path and count"
-  (princ (format "• %d %s\n" φcount8086 φfilepath4287 )))
+  (princ (format "• %d %s\n%s" φcount8086 φfilepath4287 xah-find-file-separator)))
 
 (defun xah-find--switch-and-highlight (φbuffer φhi-str &optional φuse-regex-p)
   "switch to φbuffer and highlight stuff"
@@ -223,6 +244,7 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
     (switch-to-buffer φbuffer)
     (delete-other-windows)
     (fundamental-mode)
+    (xah-find--display-formfeed-as-line)
     (hi-lock-mode) ; todo: implement my own coloring
     (buffer-enable-undo)
     (when (not (string= φhi-str ""))
@@ -231,6 +253,7 @@ Note, for the time zone offset, both the formats 「hhmm」 and 「hh:mm」 are 
            φhi-str
          (regexp-quote φhi-str))
        (quote hi-yellow)))
+    
     (highlight-lines-matching-regexp "^• " (quote hi-pink))))
 
 
@@ -259,32 +282,38 @@ If `universal-argument' is called first, prompt to ask."
         (ξoutputBuffer "*xah-find output*")
         ξp1 ; context begin position
         ξp2 ; context end position
+        ξp3 ; match begin position
+        ξp4 ; match end position
         )
 
     (setq φinput-dir (file-name-as-directory φinput-dir)) ; normalize dir path
 
-    (with-output-to-temp-buffer ξoutputBuffer
-      (xah-find--print-header φinput-dir φpath-regex φsearch-str1 )
-      (mapc
-       (lambda (ξpath)
-         (setq ξcount 0)
-         (with-temp-buffer
-           (insert-file-contents ξpath)
-           (while (search-forward φsearch-str1 nil "NOERROR")
-             (setq ξcount (1+ ξcount))
-             (setq ξp1 (max 1 (- (match-beginning 0) xah-find-print-before )))
-             (setq ξp2 (min (point-max) (+ (match-end 0) xah-find-print-after )))
-             (when φprintContext-p (xah-find--print-text-block (buffer-substring-no-properties ξp1 ξp2 ))))
-           (when (> ξcount 0)
-             (xah-find--print-file-count ξpath ξcount))))
+    (with-temp-buffer-window 
+     ξoutputBuffer nil nil
+     (xah-find--print-header φinput-dir φpath-regex φsearch-str1 )
+     (mapc
+      (lambda (ξpath)
+        (setq ξcount 0)
+        (with-temp-buffer
+          (insert-file-contents ξpath)
+          (while (search-forward φsearch-str1 nil "NOERROR")
+            (setq ξcount (1+ ξcount))
+            (setq ξp3 (- (point) (length φsearch-str1)))
+            (setq ξp4 (point))
+            (put-text-property ξp3 ξp4 'face (list :background "yellow"))
+            (setq ξp1 (max 1 (- (match-beginning 0) xah-find-print-before )))
+            (setq ξp2 (min (point-max) (+ (match-end 0) xah-find-print-after )))
+            (when φprintContext-p (xah-find--print-text-block (buffer-substring ξp1 ξp2 ))))
+          (when (> ξcount 0)
+            (xah-find--print-file-count ξpath ξcount))))
 
-       (xah-find--filter-list
-        (lambda (x)
-          (not (xah-find--ignore-dir-p x)))
-        (find-lisp-find-files φinput-dir φpath-regex)))
+      (xah-find--filter-list
+       (lambda (x)
+         (not (xah-find--ignore-dir-p x)))
+       (find-lisp-find-files φinput-dir φpath-regex)))
 
-      (xah-find--switch-and-highlight ξoutputBuffer φsearch-str1)
-      (princ "Done"))))
+     (xah-find--switch-and-highlight ξoutputBuffer φsearch-str1)
+     (princ "Done"))))
 
 ;;;###autoload
 (defun xah-find-text-regex (φsearch-regex φinput-dir φpath-regex φfixed-case-search-p φprint-context-level )
@@ -517,5 +546,9 @@ Path regex: 「%s」
     (xah-find--switch-and-highlight ξoutputBuffer φsearch-str)))
 
 (provide 'xah-find)
+
+;; Local Variables:
+;; coding: utf-8
+;; End:
 
 ;;; xah-find.el ends here
