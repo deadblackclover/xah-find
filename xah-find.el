@@ -135,7 +135,7 @@
 (setq xah-find-file-separator "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" )
 
 (defcustom xah-find-occur-separator nil "A string as visual separator." :group 'xah-find )
-(setq xah-find-occur-separator "──────────────────────────────────────────────────\n" )
+(setq xah-find-occur-separator "──────────────────────────────────────────────────────────────────────\n" )
 
 
 
@@ -184,12 +184,13 @@ Version 2015-05-23"
 (defvar xah-find-keymap nil "Keybinding for `xah-find.el output'")
 (progn
   (setq xah-find-keymap (make-sparse-keymap))
-
   (define-key xah-find-keymap (kbd "TAB") 'xah-find-next-match)
   (define-key xah-find-keymap (kbd "<S-tab>") 'xah-find-previous-match)
   (define-key xah-find-keymap (kbd "<backtab>") 'xah-find-previous-match)
   (define-key xah-find-keymap (kbd "M-n") 'xah-find-next-file)
-  (define-key xah-find-keymap (kbd "M-p") 'xah-find-previous-file))
+  (define-key xah-find-keymap (kbd "M-p") 'xah-find-previous-file)
+  (define-key xah-find-keymap (kbd "RET") 'xah-find--jump-to-place)
+  (define-key xah-find-keymap (kbd "<mouse-1>") 'xah-find--mouse-jump-to-place))
 
 (defun xah-find-next-match ()
   "Put cursor to next occurrence."
@@ -211,30 +212,29 @@ Version 2015-05-23"
   (interactive)
   (search-backward "❯" nil "NOERROR" ))
 
+(defun xah-find--mouse-jump-to-place (φevent)
+  "visit the file."
+  (interactive "e")
+  (let* ((ξwindow (posn-window (event-end φevent)))
+         (ξpos (posn-point (event-end φevent)))
+         (ξfpath (get-text-property ξpos 'xah-find-fpath))
+         (ξpos-jump-to (get-text-property ξpos 'xah-find-pos)))
+    (when (not (null ξfpath))
+      (progn
+        (find-file-other-window ξfpath)
+        (goto-char ξpos-jump-to)))))
+
+(defun xah-find--jump-to-place ()
+  "visit the file."
+  (interactive)
+  (let ((ξfpath (get-text-property (point) 'xah-find-fpath))
+        (ξpos-jump-to (get-text-property (point) 'xah-find-pos)))
+    (when (not (null ξfpath))
+      (progn
+        (find-file-other-window ξfpath)
+        (goto-char ξpos-jump-to)))))
+
 
-
-;; (defun dired-mouse-find-file-other-window (event)
-;;   "In Dired, visit the file or directory name you click on."
-;;   (interactive "e")
-;;   (let ((window (posn-window (event-end event)))
-;;         (pos (posn-point (event-end event)))
-;;         file)
-;;     (if (not (windowp window))
-;;         (error "No file chosen"))
-;;     (with-current-buffer (window-buffer window)
-;;       (goto-char pos)
-;;       (setq file (dired-get-file-for-visit)))
-;;     (if (file-directory-p file)
-;;         (or (and (cdr dired-subdir-alist)
-;;                  (dired-goto-subdir file))
-;;             (progn
-;;               (select-window window)
-;;               (dired-other-window file)))
-;;       (select-window window)
-;;       (find-file-other-window (file-name-sans-versions file t)))))
-
-
-
 (defun xah-find--backup-suffix (φs)
   "Return a string of the form 「~‹φs›~‹date time stamp›~」"
   (concat "~" φs (format-time-string "%Y%m%dT%H%M%S") "~"))
@@ -260,23 +260,37 @@ Version 2015-05-23"
     )
    φbufferObj))
 
-(defun xah-find--print-text-block (φstring9462)
-  "print string9462"
-  (princ (format "［%s］\n%s" φstring9462 xah-find-occur-separator)))
-
 (defun xah-find--print-occur-block (φp1 φp2 φbuff)
   "print "
   (princ
    (concat
-    "［"
     (buffer-substring-no-properties (max 1 (- φp1 xah-find-context-char-count-before )) φp1 )
     "❨"
     (buffer-substring-no-properties φp1 φp2 )
     "❩"
     (buffer-substring-no-properties φp2 (min (point-max) (+ φp2 xah-find-context-char-count-after )))
-    "］\n"
+    "\n"
     xah-find-occur-separator)
    φbuff))
+
+(defun xah-find--occur-output (φp1 φp2 φfpath φbuff)
+  "print "
+  (let (
+        (ξp3 (max 1 (- φp1 xah-find-context-char-count-before )))
+        (ξp4 (min (point-max) (+ φp2 xah-find-context-char-count-after )))
+        ξtextBefore
+        ξtextMiddle
+        ξtextAfter)
+    (put-text-property φp1 φp2 'face (list :background "yellow"))
+    (put-text-property φp1 φp2 'xah-find-fpath φfpath)
+    (put-text-property φp1 φp2 'xah-find-pos φp1)
+    (add-text-properties φp1 φp2 '(mouse-face highlight))
+
+    (setq ξtextBefore (buffer-substring ξp3 φp1 ))
+    (setq ξtextMiddle (buffer-substring φp1 φp2 ))
+    (setq ξtextAfter (buffer-substring φp2 ξp4))
+    (with-current-buffer φbuff
+      (insert ξtextBefore "❨" ξtextMiddle "❩" ξtextAfter "\n" xah-find-occur-separator ))))
 
 (defun xah-find--print-replace-block (φp1 φp2 φbuff)
   "print "
@@ -286,7 +300,7 @@ Version 2015-05-23"
 
 (defun xah-find--print-file-count (φfilepath4287 φcount8086 φbuffObj32)
   "Print file path and count"
-  (princ (format "%d ❮%s❯\n%s" φcount8086 φfilepath4287 xah-find-file-separator) φbuffObj32))
+  (princ (format "%d ❮ %s ❯\n%s" φcount8086 φfilepath4287 xah-find-file-separator) φbuffObj32))
 
 (defun xah-find--highlight-output (φbuffer &optional φsearch-str φreplace-str)
   "switch to φbuffer and highlight stuff"
@@ -317,6 +331,22 @@ Version 2015-05-23"
          'face (list :background "pink"))))
     (goto-char 1)
     (search-forward-regexp "━+" nil "NOERROR")
+    (use-local-map xah-find-keymap)))
+
+(defun xah-find--switch-to-output (φbuffer)
+  "switch to φbuffer and highlight stuff"
+  (let ()
+    (switch-to-buffer φbuffer)
+    (progn
+      (goto-char 1)
+      (while (search-forward "❮" nil "NOERROR")
+        (put-text-property
+         (line-beginning-position)
+         (line-end-position)
+         'face (list :background "pink"))))
+    (goto-char 1)
+    (search-forward "━" nil "NOERROR")
+    (search-forward "❨" nil "NOERROR")
     (use-local-map xah-find-keymap)))
 
 
@@ -398,13 +428,18 @@ If `universal-argument' is called first, prompt to ask.
          (insert-file-contents ξpath)
          (while (search-forward φsearch-str1 nil "NOERROR")
            (setq ξcount (1+ ξcount))
-           (when φprintContext-p (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj)))
+           (when φprintContext-p
+             (xah-find--occur-output (match-beginning 0) (match-end 0) ξpath ξoutBufObj)
+             ;; (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj)
+             ))
          (when (> ξcount 0) (xah-find--print-file-count ξpath ξcount ξoutBufObj))))
      (xah-find--filter-list
       (lambda (x)
         (not (xah-find--ignore-dir-p x)))
       (find-lisp-find-files φinput-dir φpath-regex)))
-    (xah-find--highlight-output ξoutBufObj φsearch-str1)))
+    (xah-find--switch-to-output ξoutBufObj)
+    ;; (xah-find--highlight-output ξoutBufObj φsearch-str1)
+    ))
 
 ;;;###autoload
 (defun xah-find-replace-text (φsearch-str φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p &optional φbackup-p)
@@ -519,7 +554,7 @@ No regex.
     (xah-find--print-header ξoutBufObj "xah-find-replace-text-regex" φinput-dir φpath-regex φregex φreplace-str )
     (mapc
      (lambda (ξfp)
-       (let ((ξcount 0))         
+       (let ((ξcount 0))
          (with-temp-buffer
            (insert-file-contents ξfp)
            (setq case-fold-search (not φfixed-case-search-p))
