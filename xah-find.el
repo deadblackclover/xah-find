@@ -29,9 +29,9 @@
 
 ;; • On Windows and don't have unix find/grep/sed utils installed.
 
-;; • Process lots Unicode chars. See  http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
-
 ;; • Find/Replace string that contains newline chars.
+
+;; • Find/Replace string that contains lots Unicode chars. See http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
 
 ;; • You want to use emacs regex, not shell's regex.
 
@@ -131,21 +131,11 @@
 
   ])
 
-(defcustom xah-find-file-separator nil "A string that act as separator."
-  :group 'xah-find
-  )
-(setq
- xah-find-file-separator
- "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
- )
+(defcustom xah-find-file-separator nil "A string as visual separator." :group 'xah-find )
+(setq xah-find-file-separator "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" )
 
-(defcustom xah-find-occur-separator nil "A string that act as separator."
-  :group 'xah-find
-  )
-(setq
- xah-find-occur-separator
- "──────────────────────────────────────────────────\n"
- )
+(defcustom xah-find-occur-separator nil "A string as visual separator." :group 'xah-find )
+(setq xah-find-occur-separator "──────────────────────────────────────────────────\n" )
 
 
 
@@ -188,6 +178,60 @@ Version 2015-05-23"
 ;;            (ξnew-display-entry (vconcat (make-list 60 ξglyph))))
 ;;       (unless (equal ξnew-display-entry (elt buffer-display-table ?\^L))
 ;;         (aset buffer-display-table ?\^L ξnew-display-entry)))))
+
+
+
+(defvar xah-find-keymap nil "Keybinding for `xah-find.el output'")
+(progn
+  (setq xah-find-keymap (make-sparse-keymap))
+
+  (define-key xah-find-keymap (kbd "TAB") 'xah-find-next-match)
+  (define-key xah-find-keymap (kbd "<S-tab>") 'xah-find-previous-match)
+  (define-key xah-find-keymap (kbd "<backtab>") 'xah-find-previous-match)
+  (define-key xah-find-keymap (kbd "M-n") 'xah-find-next-file)
+  (define-key xah-find-keymap (kbd "M-p") 'xah-find-previous-file))
+
+(defun xah-find-next-match ()
+  "Put cursor to next occurrence."
+  (interactive)
+  (search-forward "❨" nil "NOERROR" ))
+
+(defun xah-find-previous-match ()
+  "Put cursor to previous occurrence."
+  (interactive)
+  (search-backward "❩" nil "NOERROR" ))
+
+(defun xah-find-next-file ()
+  "Put cursor to next file."
+  (interactive)
+  (search-forward "❮" nil "NOERROR" ))
+
+(defun xah-find-previous-file ()
+  "Put cursor to previous file."
+  (interactive)
+  (search-backward "❯" nil "NOERROR" ))
+
+
+
+;; (defun dired-mouse-find-file-other-window (event)
+;;   "In Dired, visit the file or directory name you click on."
+;;   (interactive "e")
+;;   (let ((window (posn-window (event-end event)))
+;;         (pos (posn-point (event-end event)))
+;;         file)
+;;     (if (not (windowp window))
+;;         (error "No file chosen"))
+;;     (with-current-buffer (window-buffer window)
+;;       (goto-char pos)
+;;       (setq file (dired-get-file-for-visit)))
+;;     (if (file-directory-p file)
+;;         (or (and (cdr dired-subdir-alist)
+;;                  (dired-goto-subdir file))
+;;             (progn
+;;               (select-window window)
+;;               (dired-other-window file)))
+;;       (select-window window)
+;;       (find-file-other-window (file-name-sans-versions file t)))))
 
 
 
@@ -271,18 +315,18 @@ Version 2015-05-23"
          (line-beginning-position)
          (line-end-position)
          'face (list :background "pink"))))
-
     (goto-char 1)
-    (search-forward-regexp "━+" nil "NOERROR")))
+    (search-forward-regexp "━+" nil "NOERROR")
+    (use-local-map xah-find-keymap)))
 
 
 
 ;;;###autoload
 (defun xah-find-count (φsearch-str φcount-expr φcount-number φinput-dir φpath-regex)
   "Report how many occurances of a string, of a given dir.
-Similar to grep, written in elisp.
-
-Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-search' to change."
+Similar to `rgrep', but written in pure elisp.
+Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-search' to change.
+\\{xah-find-keymap}"
   (interactive
    (let* ( ξoperator)
      (list
@@ -293,8 +337,7 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
              '("greater than" "greater or equal to" "equal" "not equal" "less than" "less or equal to" )))
       (read-string (format "Count %s: "  ξoperator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history))))
-
+      (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$"))))
   (let* ((ξoutBufName "*xah-find output*")
          ξoutBufObj
          (ξcountOperator
@@ -329,13 +372,14 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
 (defun xah-find-text (φsearch-str1 φinput-dir φpath-regex φfixed-case-search-p φprintContext-p)
   "Report files that contain string.
 By default, not case sensitive, and print surrounding text.
-If `universal-argument' is called first, prompt to ask."
+If `universal-argument' is called first, prompt to ask.
+\\{xah-find-keymap}"
   (interactive
    (let ((ξdefault-input (if (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end)) (current-word))))
      (list
       (read-string (format "Search string (default %s): " ξdefault-input) nil 'query-replace-history ξdefault-input)
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
+      (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$")
       (if current-prefix-arg (y-or-n-p "Fixed case in search?") nil )
       (if current-prefix-arg (y-or-n-p "Print surrounding Text?") t ))))
   (let* ((case-fold-search (not φfixed-case-search-p))
@@ -366,20 +410,21 @@ If `universal-argument' is called first, prompt to ask."
 (defun xah-find-replace-text (φsearch-str φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p &optional φbackup-p)
   "Find/Replace string in all files of a directory.
 Search string can span multiple lines.
-No regex."
+No regex.
+\\{xah-find-keymap}"
   (interactive
    (list
     (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word))
     (read-string (format "Replace string: ") nil 'query-replace-history)
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
+    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$")
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")
     (y-or-n-p "Make backup?")))
   (let ((ξoutBufName "*xah-find output*")
         ξoutBufObj
-        (ξbackupSuffix (xah-find--backup-suffix "xfrt")))
+        (ξbackupSuffix (xah-find--backup-suffix "xf")))
     (when (get-buffer ξoutBufName) (kill-buffer ξoutBufName))
     (setq ξoutBufObj (generate-new-buffer ξoutBufName))
     (xah-find--print-header  ξoutBufObj "xah-find-replace-text" φinput-dir φpath-regex φsearch-str φreplace-str )
@@ -409,12 +454,13 @@ No regex."
 
 ;;;###autoload
 (defun xah-find-text-regex (φsearch-regex φinput-dir φpath-regex φfixed-case-search-p φprint-context-level )
-  "Report files that contain a string pattern, similar to unix grep."
+  "Report files that contain a string pattern, similar to `rgrep'.
+\\{xah-find-keymap}"
   (interactive
    (list
     (read-string (format "Search regex (default %s): " (current-word)) nil 'query-replace-history (current-word))
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
+    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$")
     (y-or-n-p "Fixed case search?")
     (ido-completing-read "Print context level (0=none, 1=matched pattern, 2=neighboring string) " '("0" "1" "2"))))
   (let ((ξcount 0)
@@ -455,19 +501,19 @@ No regex."
 φwrite-to-file-p, when true, write to file, else, print a report of changes only.
 φfixed-case-search-p sets `case-fold-search' for this operation.
 φfixed-case-replace-p, if true, then the letter-case in replacement is literal. (this is relevant only if φfixed-case-search-p is true.)
-"
+\\{xah-find-keymap}"
   (interactive
    (list
     (read-regexp "Find regex: " )
     (read-string (format "Replace string: ") nil 'query-replace-history)
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history)
+    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$")
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")))
   (let ((ξoutBufName "*xah-find output*")
         ξoutBufObj
-        (ξbackupSuffix (xah-find--backup-suffix "xfrtr")))
+        (ξbackupSuffix (xah-find--backup-suffix "xfr")))
     (when (get-buffer ξoutBufName) (kill-buffer ξoutBufName))
     (setq ξoutBufObj (generate-new-buffer ξoutBufName))
     (xah-find--print-header ξoutBufObj "xah-find-replace-text-regex" φinput-dir φpath-regex φregex φreplace-str )
