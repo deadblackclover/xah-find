@@ -16,7 +16,7 @@
 
 ;;; Commentary:
 
-;; Provides emacs commands for find/replace on multiple files, written entirely in emacs lisp.
+;; Provides emacs commands for find/replace string of files file in a directory, written entirely in emacs lisp.
 
 ;; This package provides the follow functions:
 
@@ -25,8 +25,6 @@
 ;; xah-find-count
 ;; xah-find-replace-text
 ;; xah-find-replace-text-regex
-
-;; Features:
 
 ;; • Pure emacs lisp. No dependencies on unix/linux grep/sed/find. Especially useful on Windows.
 
@@ -40,9 +38,9 @@
 
 ;; • Using emacs regex, not bash/perl etc regex.
 
-;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's much more easier to find or replace a block of text, especially programing language source code.
+;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's much easier to find or replace a block of text, especially programing language source code.
 
-;; The printed report is also not based on lines. Instead, visual separator are used for easy reading.
+;; The printed report is also not based on lines. Instead, visual separators are used for easy reading.
 
 ;; For each occurance or replacement, n chars will be printed before and after. The number of chars to show is defined by `xah-find-context-char-count-before' and `xah-find-context-char-count-after'
 
@@ -51,6 +49,9 @@
 ;; so, the number of blocks corresponds exactly to the number of occurrences.
 
 ;; Ignore directories.
+
+;; By default, .git dir is ignored. You can add to it by:
+
 ;; Add the following in your init:
 
 ;; (setq
@@ -64,9 +65,10 @@
 
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
 
-;; Do you find it useful? Your support is much appreciated.
+;; Like it?
 ;; Buy Xah Emacs Tutorial
 ;; http://ergoemacs.org/emacs/buy_xah_emacs_tutorial.html
+;; Thank you.
 
 ;;; INSTALL
 
@@ -87,59 +89,46 @@
 ;; version 1.0, 2012-04-02 First version.
 
 ;;; TODO:
-;; 2015-05-20 the feeble find-lisp-find-files is becoming a efficiency pain. It uses one regex to list all files, then you have to filter dir. And, there's no alternative except some “modern” API third-party shiny thing
+;; 2015-05-20 the feeble find-lisp-find-files is becoming a efficiency pain. It uses one regex to list all files, then you have to filter dir. There doesn't seem to be alternative except roll one's own or use third-party package
 
 
 ;;; Code:
 
 (require 'find-lisp) ; in emacs
+(require 'ido)       ; in emacs
 
 (defcustom xah-find-context-char-count-before 100 "Number of characters to print before search string."
   :group 'xah-find
   )
-(setq xah-find-context-char-count-before 100)
 
 (defcustom xah-find-context-char-count-after 30 "Number of characters to print after search string."
   :group 'xah-find
   )
-(setq xah-find-context-char-count-after 30)
 
-(defcustom xah-find-dir-ignore-regex-list nil "A list or vector of regex patterns, if match, that directory will be ignored. Case is dependent on current value of `case-fold-search'"
+(defcustom xah-find-dir-ignore-regex-list
+  [
+   "\\.git/"
+   ]
+  "A list or vector of regex patterns, if match, that directory will be ignored. Case is dependent on current value of `case-fold-search'"
   :group 'xah-find
   )
-(setq
- xah-find-dir-ignore-regex-list
- [
-  "\\.git/"
 
-  "xahlee_info/php-doc/"
-  "xahlee_info/node_api/"
-  "xahlee_info/java8_doc/"
-  "xahlee_info/css_transitions/"
-  "xahlee_info/css3_spec_bg/"
-  "xahlee_info/css_3_color_spec/"
-  "xahlee_info/REC-SVG11-20110816/"
-  "xahlee_info/python_doc_3.3.3/"
-  "xahlee_info/python_doc_2.7.6/"
-  "xahlee_info/jquery_doc/"
-  "xahlee_info/javascript_ecma-262_5.1_2011/"
-  "xahlee_info/git-bottomup/"
-  "xahlee_info/dom-whatwg/"
-  "xahlee_info/css_2.1_spec/"
-  "xahlee_info/clojure-doc-1.6/"
+(defcustom xah-find-file-separator
+  "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+  "A string as visual separator."
+  :group 'xah-find )
 
-  ])
-
-(defcustom xah-find-file-separator nil "A string as visual separator." :group 'xah-find )
-(setq xah-find-file-separator "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" )
-
-(defcustom xah-find-occur-separator nil "A string as visual separator." :group 'xah-find )
-(setq xah-find-occur-separator "──────────────────────────────────────────────────────────────────────\n" )
+(defcustom
+  xah-find-occur-separator
+  "──────────────────────────────────────────────────────────────────────\n"
+  "A string as visual separator."
+  :group 'xah-find )
 
 
 
 (defun xah-find--filter-list (φpredicate φsequence)
-  "Return a new list such that φpredicate is true on all members of φsequence.
+  "Return a new list such that ΦPREDICATE is true on all members of ΦSEQUENCE.
+
 URL `http://ergoemacs.org/emacs/elisp_filter_list.html'
 Version 2015-05-23"
   (delete
@@ -152,7 +141,7 @@ Version 2015-05-23"
     φsequence)))
 
 (defun xah-find--ignore-dir-p (φpath)
-  "Return true if φpath should be ignored. Else, nil."
+  "Return true if ΦPATH should be ignored. Else, nil."
   (catch 'exit25001
     (mapc
      (lambda (x)
@@ -200,7 +189,8 @@ Version 2015-05-23"
   "Put cursor to previous occurrence."
   (interactive)
   (search-backward "❩" nil "NOERROR" )
-  (left-char))
+  (left-char) ; todo. this is a hack. move point to insider highlight propert so it's clickable
+  )
 
 (defun xah-find-next-file ()
   "Put cursor to next file."
@@ -214,7 +204,7 @@ Version 2015-05-23"
   (left-char))
 
 (defun xah-find--mouse-jump-to-place (φevent)
-  "visit the file."
+  "Open file and put cursor at location of the occurrence."
   (interactive "e")
   (let* ((ξwindow (posn-window (event-end φevent)))
          (ξpos (posn-point (event-end φevent)))
@@ -226,7 +216,7 @@ Version 2015-05-23"
         (when ξpos-jump-to (goto-char ξpos-jump-to))))))
 
 (defun xah-find--jump-to-place ()
-  "visit the file."
+  "Open file and put cursor at location of the occurrence."
   (interactive)
   (let ((ξfpath (get-text-property (point) 'xah-find-fpath))
         (ξpos-jump-to (get-text-property (point) 'xah-find-pos)))
@@ -359,16 +349,14 @@ Version 2015-05-23"
 (defun xah-find-count (φsearch-str φcount-expr φcount-number φinput-dir φpath-regex)
   "Report how many occurances of a string, of a given dir.
 Similar to `rgrep', but written in pure elisp.
+Result is shown in buffer *xah-find output*.
 Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-search' to change.
 \\{xah-find-keymap}"
   (interactive
-   (let* ( ξoperator)
+   (let ( ξoperator)
      (list
       (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word))
-      (setq ξoperator
-            (ido-completing-read
-             "Report on:"
-             '("greater than" "greater or equal to" "equal" "not equal" "less than" "less or equal to" )))
+      (setq ξoperator (ido-completing-read "Report on: " '("greater than" "greater or equal to" "equal" "not equal" "less than" "less or equal to" )))
       (read-string (format "Count %s: "  ξoperator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
       (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history))))
@@ -404,6 +392,7 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
   "Report files that contain string.
 By default, not case sensitive, and print surrounding text.
 If `universal-argument' is called first, prompt to ask.
+Result is shown in buffer *xah-find output*.
 \\{xah-find-keymap}"
   (interactive
    (let ((ξdefault-input (if (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end)) (current-word))))
@@ -439,6 +428,10 @@ If `universal-argument' is called first, prompt to ask.
   "Find/Replace string in all files of a directory.
 Search string can span multiple lines.
 No regex.
+
+Backup, if requested, backup filenames has suffix with timestamp, like this: ~xf20150531T233826~
+
+Result is shown in buffer *xah-find output*.
 \\{xah-find-keymap}"
   (interactive
    (list
@@ -477,6 +470,7 @@ No regex.
 ;;;###autoload
 (defun xah-find-text-regex (φsearch-regex φinput-dir φpath-regex φfixed-case-search-p φprint-context-level )
   "Report files that contain a string pattern, similar to `rgrep'.
+Result is shown in buffer *xah-find output*.
 \\{xah-find-keymap}"
   (interactive
    (list
@@ -515,13 +509,18 @@ No regex.
 ;;;###autoload
 (defun xah-find-replace-text-regex (φregex φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p)
   "Find/Replace by regex in all files of a directory.
-φregex is a regex pattern.
-φreplace-str is replacement string.
-φinput-dir is input directory to search (includes all nested subdirectories).
-φpath-regex is a regex to filter file paths.
-φwrite-to-file-p, when true, write to file, else, print a report of changes only.
-φfixed-case-search-p sets `case-fold-search' for this operation.
-φfixed-case-replace-p, if true, then the letter-case in replacement is literal. (this is relevant only if φfixed-case-search-p is true.)
+
+Backup, if requested, backup filenames has suffix with timestamp, like this: ~xf20150531T233826~
+
+When called in lisp code:
+ΦREGEX is a regex pattern.
+ΦREPLACE-STR is replacement string.
+ΦINPUT-DIR is input directory to search (includes all nested subdirectories).
+ΦPATH-REGEX is a regex to filter file paths.
+ΦWRITE-TO-FILE-P, when true, write to file, else, print a report of changes only.
+ΦFIXED-CASE-SEARCH-P sets `case-fold-search' for this operation.
+ΦFIXED-CASE-REPLACE-P if true, then the letter-case in replacement is literal. (this is relevant only if ΦFIXED-CASE-SEARCH-P is true.)
+Result is shown in buffer *xah-find output*.
 \\{xah-find-keymap}"
   (interactive
    (list
