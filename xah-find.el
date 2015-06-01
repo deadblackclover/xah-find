@@ -15,27 +15,31 @@
 
 ;;; Commentary:
 
-;; Provides emacs commands for find/replace. Similar to {grep, sed}, but entirely written emacs lisp.
+;; Provides emacs commands for find/replace on multiple files, written entirely in emacs lisp.
 
 ;; This package provides the follow functions:
 
-;; xah-find-text                → like grep
-;; xah-find-text-regex          → like regex grep
-;; xah-find-count               → like grep count
-;; xah-find-replace-text        → like sed
-;; xah-find-replace-text-regex  → like sed
+;; xah-find-text
+;; xah-find-text-regex
+;; xah-find-count
+;; xah-find-replace-text
+;; xah-find-replace-text-regex
 
-;; This package is most useful when:
+;; Features:
 
-;; • On Windows and don't have unix find/grep/sed utils installed.
+;; • Pure emacs lisp. No dependencies on unix/linux grep/sed/find. Especially useful on Windows.
 
-;; • Find/Replace string that contains newline chars.
+;; • Output is highlighted and clickable for jumping to occurence.
 
-;; • Find/Replace string that contains lots Unicode chars. See http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
+;; • Reliably Find/Replace string that contains newline chars.
 
-;; • You want to use emacs regex, not shell's regex.
+;; • Reliably Find/Replace string that contains lots Unicode chars. See http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
 
-;; These commands treat a file as sequence of chars, not as lines as in sed, so it's much more easier to find or replace char sequences.
+;; • Reliably Find/Replace string that contains lots escape slashes or backslashes. For example, regex in source code, Microsoft Windows's path.
+
+;; • Using emacs regex, not bash/perl etc regex.
+
+;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's much more easier to find or replace a block of text, especially programing language source code.
 
 ;; The printed report is also not based on lines. Instead, visual separator are used for easy reading.
 
@@ -505,9 +509,9 @@ No regex.
            (setq ξcount (1+ ξcount))
            (cond
             ((equal φprint-context-level "none") nil)
-            ((equal φprint-context-level "just matched pattern") 
+            ((equal φprint-context-level "just matched pattern")
              (xah-find--occur-output (match-beginning 0) (match-end 0) ξfp ξoutBufObj))
-            ((equal φprint-context-level "with context string") 
+            ((equal φprint-context-level "with context string")
              (xah-find--occur-output (match-beginning 0) (match-end 0) ξfp ξoutBufObj t))))
          (when (> ξcount 0) (xah-find--print-file-count ξfp ξcount ξoutBufObj))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files φinput-dir φpath-regex)))
