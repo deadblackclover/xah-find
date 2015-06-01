@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Version: 2.1.1
+;; Version: 2.1.2
 ;; Created: 02 April 2012
 ;; Keywords: convenience, extensions, files, tools, unix
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
@@ -362,7 +362,7 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
       (setq ξoperator (ido-completing-read "Report on: " '("greater than" "greater or equal to" "equal" "not equal" "less than" "less or equal to" )))
       (read-string (format "Count %s: "  ξoperator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history))))
+      (read-from-minibuffer "File path regex: " "\\.html$" nil nil 'dired-regexp-history))))
   (let* ((ξoutBufName "*xah-find output*")
          ξoutBufObj
          (ξcountOperator
@@ -402,7 +402,7 @@ Result is shown in buffer *xah-find output*.
      (list
       (read-string (format "Search string (default %s): " ξdefault-input) nil 'query-replace-history ξdefault-input)
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history)
+      (read-from-minibuffer "File path regex: " "\\.html$" nil nil 'dired-regexp-history)
       (if current-prefix-arg (y-or-n-p "Fixed case in search?") nil )
       (if current-prefix-arg (y-or-n-p "Print surrounding Text?") t ))))
   (let* ((case-fold-search (not φfixed-case-search-p))
@@ -437,15 +437,18 @@ Backup, if requested, backup filenames has suffix with timestamp, like this: ~xf
 Result is shown in buffer *xah-find output*.
 \\{xah-find-keymap}"
   (interactive
-   (list
-    (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word))
-    (read-string (format "Replace string: ") nil 'query-replace-history)
-    (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history)
-    (y-or-n-p "Write changes to file?")
-    (y-or-n-p "Fixed case in search?")
-    (y-or-n-p "Fixed case in replacement?")
-    (y-or-n-p "Make backup?")))
+   (let ( x-search-str x-replace-str x-input-dir x-path-regex x-write-to-file-p x-fixed-case-search-p x-fixed-case-replace-p x-backup-p )
+     (setq x-search-str (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word)))
+     (setq x-replace-str (read-string (format "Replace string: ") nil 'query-replace-history))
+     (setq x-input-dir (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH"))
+     (setq x-path-regex (read-from-minibuffer "File path regex: " "\\.html$" nil nil 'dired-regexp-history))
+     (setq x-write-to-file-p (y-or-n-p "Write changes to file?"))
+     (setq x-fixed-case-search-p (y-or-n-p "Fixed case in search?"))
+     (setq x-fixed-case-replace-p (y-or-n-p "Fixed case in replacement?"))
+     (if x-write-to-file-p 
+         (setq x-backup-p (y-or-n-p "Make backup?"))
+       (setq x-backup-p nil))
+     (list x-search-str x-replace-str x-input-dir x-path-regex x-write-to-file-p x-fixed-case-search-p x-fixed-case-replace-p x-backup-p )))
   (let ((ξoutBufName "*xah-find output*")
         ξoutBufObj
         (ξbackupSuffix (xah-find--backup-suffix "xf")))
@@ -479,7 +482,7 @@ Result is shown in buffer *xah-find output*.
    (list
     (read-string (format "Search regex (default %s): " (current-word)) nil 'query-replace-history (current-word))
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history)
+    (read-from-minibuffer "File path regex: " "\\.html$" nil nil 'dired-regexp-history)
     (y-or-n-p "Fixed case search?")
     (ido-completing-read "Print context level: " '("with context string" "just matched pattern" "none" ))))
   (let ((ξcount 0)
@@ -530,7 +533,7 @@ Result is shown in buffer *xah-find output*.
     (read-regexp "Find regex: " )
     (read-string (format "Replace string: ") nil 'query-replace-history)
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history)
+    (read-from-minibuffer "File path regex: " "\\.html$" nil nil 'dired-regexp-history)
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")))
