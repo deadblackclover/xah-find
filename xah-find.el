@@ -3,9 +3,10 @@
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Version: 2.1.0
+;; Version: 2.1.1
 ;; Created: 02 April 2012
 ;; Keywords: convenience, extensions, files, tools, unix
+;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
 
 ;; This file is not part of GNU Emacs.
 
@@ -59,17 +60,11 @@
 ;;    ; more path regex here
 ;;   ])
 
-;; TODO:
-;; • add tab key to jump to results. consider other, check prev/next tradition in debugger or such
-;; • add link jump to file, location
-;; • make sure ^L displays as line
-;; The output isn't beautiful. May be hard to read.
-;; File path in output isn't clickable. (use M-x `ffap' for now.)
-;; Highlighting is clunky (am using `highlight-lines-matching-regexp' instead of coding my own text properties)
-
 ;; I've been using this for 2 years, about every week, on linux (and Windows), on 5 thousand HTML files.
 
-;; Do you find it useful? Help me make it better.
+;; home page: http://ergoemacs.org/emacs/xah-elisp-mode.html
+
+;; Do you find it useful? Your support is much appreciated.
 ;; Buy Xah Emacs Tutorial
 ;; http://ergoemacs.org/emacs/buy_xah_emacs_tutorial.html
 
