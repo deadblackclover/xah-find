@@ -18,7 +18,7 @@
 
 ;; Provides emacs commands for find/replace string of files file in a directory, written entirely in emacs lisp.
 
-;; This package provides the follow functions:
+;; This package provides these commands:
 
 ;; xah-find-text
 ;; xah-find-text-regex
@@ -30,29 +30,27 @@
 
 ;; • Output is highlighted and clickable for jumping to occurence.
 
+;; • Using emacs regex, not bash/perl etc regex.
+
+;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's easier to find or replace a block of text, especially programing language source code.
+
 ;; • Reliably Find/Replace string that contains newline chars.
 
 ;; • Reliably Find/Replace string that contains lots Unicode chars. See http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
 
 ;; • Reliably Find/Replace string that contains lots escape slashes or backslashes. For example, regex in source code, Microsoft Windows's path.
 
-;; • Using emacs regex, not bash/perl etc regex.
-
-;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's much easier to find or replace a block of text, especially programing language source code.
-
-;; The printed report is also not based on lines. Instead, visual separators are used for easy reading.
+;; The result output is also not based on lines. Instead, visual separators are used for easy reading.
 
 ;; For each occurance or replacement, n chars will be printed before and after. The number of chars to show is defined by `xah-find-context-char-count-before' and `xah-find-context-char-count-after'
 
-;; each “block of text” in output is one occurrence.
-;; for example, if a line in a file has 2 occurrences, then the same line will be reported twice, as 2 “blocks”.
+;; Each “block of text” in output is one occurrence.
+;; For example, if a line in a file has 2 occurrences, then the same line will be reported twice, as 2 “blocks”.
 ;; so, the number of blocks corresponds exactly to the number of occurrences.
 
-;; Ignore directories.
+;; IGNORE DIRECTORIES
 
-;; By default, .git dir is ignored. You can add to it by:
-
-;; Add the following in your init:
+;; By default, .git dir is ignored. You can add to it by adding the following in your init:
 
 ;; (setq
 ;;  xah-find-dir-ignore-regex-list
@@ -61,7 +59,12 @@
 ;;    ; more path regex here
 ;;   ])
 
-;; I've been using this for 2 years, about every week, on linux (and Windows), on 5 thousand HTML files.
+;; USE CASE
+
+;; To give a idea what file size, number of files, are practical, here's my typical use pattern:
+;; • Search 5 thousand HTML files.
+;; • Each file size are less than 2 megabytes.
+;; • search string size have been up to 1.3k characters.
 
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
 
