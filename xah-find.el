@@ -200,7 +200,8 @@ Version 2015-05-23"
 (defun xah-find-previous-match ()
   "Put cursor to previous occurrence."
   (interactive)
-  (search-backward "❩" nil "NOERROR" ))
+  (search-backward "❩" nil "NOERROR" )
+  (left-char))
 
 (defun xah-find-next-file ()
   "Put cursor to next file."
@@ -210,7 +211,8 @@ Version 2015-05-23"
 (defun xah-find-previous-file ()
   "Put cursor to previous file."
   (interactive)
-  (search-backward "❯" nil "NOERROR" ))
+  (search-backward "❯" nil "NOERROR" )
+  (left-char))
 
 (defun xah-find--mouse-jump-to-place (φevent)
   "visit the file."
@@ -222,7 +224,7 @@ Version 2015-05-23"
     (when (not (null ξfpath))
       (progn
         (find-file-other-window ξfpath)
-        (goto-char ξpos-jump-to)))))
+        (when ξpos-jump-to (goto-char ξpos-jump-to))))))
 
 (defun xah-find--jump-to-place ()
   "visit the file."
@@ -232,7 +234,7 @@ Version 2015-05-23"
     (when (not (null ξfpath))
       (progn
         (find-file-other-window ξfpath)
-        (goto-char ξpos-jump-to)))))
+        (when ξpos-jump-to (goto-char ξpos-jump-to))))))
 
 
 (defun xah-find--backup-suffix (φs)
@@ -260,21 +262,21 @@ Version 2015-05-23"
     )
    φbufferObj))
 
-(defun xah-find--print-occur-block (φp1 φp2 φbuff)
-  "print "
-  (princ
-   (concat
-    (buffer-substring-no-properties (max 1 (- φp1 xah-find-context-char-count-before )) φp1 )
-    "❨"
-    (buffer-substring-no-properties φp1 φp2 )
-    "❩"
-    (buffer-substring-no-properties φp2 (min (point-max) (+ φp2 xah-find-context-char-count-after )))
-    "\n"
-    xah-find-occur-separator)
-   φbuff))
+;; (defun xah-find--print-occur-block (φp1 φp2 φbuff)
+;;   "print "
+;;   (princ
+;;    (concat
+;;     (buffer-substring-no-properties (max 1 (- φp1 xah-find-context-char-count-before )) φp1 )
+;;     "❨"
+;;     (buffer-substring-no-properties φp1 φp2 )
+;;     "❩"
+;;     (buffer-substring-no-properties φp2 (min (point-max) (+ φp2 xah-find-context-char-count-after )))
+;;     "\n"
+;;     xah-find-occur-separator)
+;;    φbuff))
 
-(defun xah-find--occur-output (φp1 φp2 φfpath φbuff)
-  "print "
+(defun xah-find--occur-output (φp1 φp2 φfpath φbuff &optional φno-context-string-p)
+  "print to output, with text properties"
   (let (
         (ξp3 (max 1 (- φp1 xah-find-context-char-count-before )))
         (ξp4 (min (point-max) (+ φp2 xah-find-context-char-count-after )))
@@ -290,60 +292,63 @@ Version 2015-05-23"
     (setq ξtextMiddle (buffer-substring φp1 φp2 ))
     (setq ξtextAfter (buffer-substring φp2 ξp4))
     (with-current-buffer φbuff
-      (insert ξtextBefore "❨" ξtextMiddle "❩" ξtextAfter "\n" xah-find-occur-separator ))))
+      (if φno-context-string-p
+          (insert "❨" ξtextMiddle "❩" "\n" xah-find-occur-separator )
+        (insert ξtextBefore "❨" ξtextMiddle "❩" ξtextAfter "\n" xah-find-occur-separator )))))
 
-(defun xah-find--print-replace-block (φp1 φp2 φbuff)
-  "print "
-  (princ
-   (concat "❬" (buffer-substring-no-properties φp1 φp2 ) "❭" "\n" xah-find-occur-separator)
-   φbuff))
+;; (defun xah-find--print-replace-block (φp1 φp2 φbuff)
+;;   "print "
+;;   (princ (concat "❬" (buffer-substring-no-properties φp1 φp2 ) "❭" "\n" xah-find-occur-separator) φbuff))
 
 (defun xah-find--print-file-count (φfilepath4287 φcount8086 φbuffObj32)
   "Print file path and count"
-  (princ (format "%d ❮ %s ❯\n%s" φcount8086 φfilepath4287 xah-find-file-separator) φbuffObj32))
+  (princ (format "%d ❮%s❯\n%s" φcount8086 φfilepath4287 xah-find-file-separator) φbuffObj32))
 
-(defun xah-find--highlight-output (φbuffer &optional φsearch-str φreplace-str)
-  "switch to φbuffer and highlight stuff"
-  (let ((ξsearch (concat "❨" φsearch-str "❩"))
-        (ξrep (concat "❬" φreplace-str "❭")))
-    (switch-to-buffer φbuffer)
-    (fundamental-mode)
-    (progn
-      (goto-char 1)
-      (while (search-forward-regexp "❨\\([^❩]+?\\)❩" nil "NOERROR")
-        (put-text-property
-         (match-beginning 0)
-         (match-end 0)
-         'face (list :background "yellow"))))
-    (progn
-      (goto-char 1)
-      (while (search-forward-regexp "❬\\([^❭]+?\\)❭" nil "NOERROR")
-        (put-text-property
-         (match-beginning 0)
-         (match-end 0)
-         'face (list :background "green"))))
-    (progn
-      (goto-char 1)
-      (while (search-forward "❮" nil "NOERROR")
-        (put-text-property
-         (line-beginning-position)
-         (line-end-position)
-         'face (list :background "pink"))))
-    (goto-char 1)
-    (search-forward-regexp "━+" nil "NOERROR")
-    (use-local-map xah-find-keymap)))
+;; (defun xah-find--highlight-output (φbuffer &optional φsearch-str φreplace-str)
+;;   "switch to φbuffer and highlight stuff"
+;;   (let ((ξsearch (concat "❨" φsearch-str "❩"))
+;;         (ξrep (concat "❬" φreplace-str "❭")))
+;;     (switch-to-buffer φbuffer)
+;;     (fundamental-mode)
+;;     (progn
+;;       (goto-char 1)
+;;       (while (search-forward-regexp "❨\\([^❩]+?\\)❩" nil "NOERROR")
+;;         (put-text-property
+;;          (match-beginning 0)
+;;          (match-end 0)
+;;          'face (list :background "yellow"))))
+;;     (progn
+;;       (goto-char 1)
+;;       (while (search-forward-regexp "❬\\([^❭]+?\\)❭" nil "NOERROR")
+;;         (put-text-property
+;;          (match-beginning 0)
+;;          (match-end 0)
+;;          'face (list :background "green"))))
+;;     (progn
+;;       (goto-char 1)
+;;       (while (search-forward "❮" nil "NOERROR")
+;;         (put-text-property
+;;          (line-beginning-position)
+;;          (line-end-position)
+;;          'face (list :background "pink"))))
+;;     (goto-char 1)
+;;     (search-forward-regexp "━+" nil "NOERROR")
+;;     (use-local-map xah-find-keymap)))
 
 (defun xah-find--switch-to-output (φbuffer)
   "switch to φbuffer and highlight stuff"
-  (let ()
+  (let (p3 p4)
     (switch-to-buffer φbuffer)
     (progn
       (goto-char 1)
       (while (search-forward "❮" nil "NOERROR")
-        (put-text-property
-         (line-beginning-position)
-         (line-end-position)
-         'face (list :background "pink"))))
+        (setq p3 (point))
+        (search-forward "❯" nil "NOERROR")
+        (setq p4 (- (point) 1))
+        (put-text-property p3 p4 'xah-find-fpath (buffer-substring-no-properties p3 p4))
+        (add-text-properties p3 p4 '(mouse-face highlight))
+        (put-text-property (line-beginning-position) (line-end-position) 'face (list :background "pink"))))
+
     (goto-char 1)
     (search-forward "━" nil "NOERROR")
     (search-forward "❨" nil "NOERROR")
@@ -367,7 +372,7 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
              '("greater than" "greater or equal to" "equal" "not equal" "less than" "less or equal to" )))
       (read-string (format "Count %s: "  ξoperator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$"))))
+      (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history))))
   (let* ((ξoutBufName "*xah-find output*")
          ξoutBufObj
          (ξcountOperator
@@ -392,11 +397,8 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
            (while (search-forward φsearch-str nil "NOERROR") (setq ξcount (1+ ξcount)))
            (when (funcall ξcountOperator ξcount ξcountNumber)
              (xah-find--print-file-count ξf ξcount ξoutBufObj)))))
-     (xah-find--filter-list
-      (lambda (x)
-        (not (xah-find--ignore-dir-p x)))
-      (find-lisp-find-files φinput-dir φpath-regex)))
-    (xah-find--highlight-output ξoutBufObj φsearch-str)))
+     (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files φinput-dir φpath-regex)))
+    (xah-find--switch-to-output ξoutBufObj)))
 
 ;;;###autoload
 (defun xah-find-text (φsearch-str1 φinput-dir φpath-regex φfixed-case-search-p φprintContext-p)
@@ -409,7 +411,7 @@ If `universal-argument' is called first, prompt to ask.
      (list
       (read-string (format "Search string (default %s): " ξdefault-input) nil 'query-replace-history ξdefault-input)
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$")
+      (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history)
       (if current-prefix-arg (y-or-n-p "Fixed case in search?") nil )
       (if current-prefix-arg (y-or-n-p "Print surrounding Text?") t ))))
   (let* ((case-fold-search (not φfixed-case-search-p))
@@ -428,18 +430,10 @@ If `universal-argument' is called first, prompt to ask.
          (insert-file-contents ξpath)
          (while (search-forward φsearch-str1 nil "NOERROR")
            (setq ξcount (1+ ξcount))
-           (when φprintContext-p
-             (xah-find--occur-output (match-beginning 0) (match-end 0) ξpath ξoutBufObj)
-             ;; (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj)
-             ))
+           (when φprintContext-p (xah-find--occur-output (match-beginning 0) (match-end 0) ξpath ξoutBufObj)))
          (when (> ξcount 0) (xah-find--print-file-count ξpath ξcount ξoutBufObj))))
-     (xah-find--filter-list
-      (lambda (x)
-        (not (xah-find--ignore-dir-p x)))
-      (find-lisp-find-files φinput-dir φpath-regex)))
-    (xah-find--switch-to-output ξoutBufObj)
-    ;; (xah-find--highlight-output ξoutBufObj φsearch-str1)
-    ))
+     (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files φinput-dir φpath-regex)))
+    (xah-find--switch-to-output ξoutBufObj)))
 
 ;;;###autoload
 (defun xah-find-replace-text (φsearch-str φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p &optional φbackup-p)
@@ -452,7 +446,7 @@ No regex.
     (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word))
     (read-string (format "Replace string: ") nil 'query-replace-history)
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$")
+    (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history)
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")
@@ -462,7 +456,7 @@ No regex.
         (ξbackupSuffix (xah-find--backup-suffix "xf")))
     (when (get-buffer ξoutBufName) (kill-buffer ξoutBufName))
     (setq ξoutBufObj (generate-new-buffer ξoutBufName))
-    (xah-find--print-header  ξoutBufObj "xah-find-replace-text" φinput-dir φpath-regex φsearch-str φreplace-str )
+    (xah-find--print-header ξoutBufObj "xah-find-replace-text" φinput-dir φpath-regex φsearch-str φreplace-str )
     (mapc
      (lambda (ξf)
        (let ((case-fold-search (not φfixed-case-search-p))
@@ -471,21 +465,15 @@ No regex.
            (insert-file-contents ξf)
            (while (search-forward φsearch-str nil t)
              (setq ξcount (1+ ξcount))
-             (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj)
              (replace-match φreplace-str φfixed-case-replace-p "literalreplace")
-             (xah-find--print-replace-block (match-beginning 0) (point) ξoutBufObj))
+             (xah-find--occur-output (match-beginning 0) (point) ξf ξoutBufObj))
            (when (> ξcount 0)
              (when φwrite-to-file-p
                (when φbackup-p (copy-file ξf (concat ξf ξbackupSuffix) t))
                (write-region 1 (point-max) ξf))
              (xah-find--print-file-count ξf ξcount ξoutBufObj )))))
-     (xah-find--filter-list
-      (lambda (x)
-        (not (xah-find--ignore-dir-p x)))
-      (find-lisp-find-files φinput-dir φpath-regex)))
-    (xah-find--highlight-output ξoutBufObj φsearch-str φreplace-str)))
-
-
+     (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files φinput-dir φpath-regex)))
+    (xah-find--switch-to-output ξoutBufObj)))
 
 ;;;###autoload
 (defun xah-find-text-regex (φsearch-regex φinput-dir φpath-regex φfixed-case-search-p φprint-context-level )
@@ -495,9 +483,9 @@ No regex.
    (list
     (read-string (format "Search regex (default %s): " (current-word)) nil 'query-replace-history (current-word))
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$")
+    (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history)
     (y-or-n-p "Fixed case search?")
-    (ido-completing-read "Print context level (0=none, 1=matched pattern, 2=neighboring string) " '("0" "1" "2"))))
+    (ido-completing-read "Print context level: " '("with context string" "just matched pattern" "none" ))))
   (let ((ξcount 0)
         (ξoutBufName "*xah-find output*")
         ξoutBufObj
@@ -516,15 +504,14 @@ No regex.
          (while (search-forward-regexp φsearch-regex nil t)
            (setq ξcount (1+ ξcount))
            (cond
-            ((equal φprint-context-level "0") nil)
-            ((equal φprint-context-level "1") (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj))
-            ((equal φprint-context-level "2") (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj))))
+            ((equal φprint-context-level "none") nil)
+            ((equal φprint-context-level "just matched pattern") 
+             (xah-find--occur-output (match-beginning 0) (match-end 0) ξfp ξoutBufObj))
+            ((equal φprint-context-level "with context string") 
+             (xah-find--occur-output (match-beginning 0) (match-end 0) ξfp ξoutBufObj t))))
          (when (> ξcount 0) (xah-find--print-file-count ξfp ξcount ξoutBufObj))))
-     (xah-find--filter-list
-      (lambda (x)
-        (not (xah-find--ignore-dir-p x)))
-      (find-lisp-find-files φinput-dir φpath-regex)))
-    (xah-find--highlight-output ξoutBufObj φsearch-regex)))
+     (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files φinput-dir φpath-regex)))
+    (xah-find--switch-to-output ξoutBufObj)))
 
 ;;;###autoload
 (defun xah-find-replace-text-regex (φregex φreplace-str φinput-dir φpath-regex φwrite-to-file-p φfixed-case-search-p φfixed-case-replace-p)
@@ -542,7 +529,7 @@ No regex.
     (read-regexp "Find regex: " )
     (read-string (format "Replace string: ") nil 'query-replace-history)
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "Path regex: " nil nil nil 'dired-regexp-history "\.html$")
+    (read-from-minibuffer "Path regex: " "\\.html$" nil nil 'dired-regexp-history)
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")))
@@ -560,19 +547,15 @@ No regex.
            (setq case-fold-search (not φfixed-case-search-p))
            (while (re-search-forward φregex nil t)
              (setq ξcount (1+ ξcount))
-             (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj)
+             ;; (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj)
+             (xah-find--occur-output (match-beginning 0) (match-end 0) ξfp ξoutBufObj t)
              (replace-match φreplace-str φfixed-case-replace-p)
-             (xah-find--print-replace-block (match-beginning 0) (point) ξoutBufObj))
+             (xah-find--occur-output (match-beginning 0) (point) ξfp ξoutBufObj))
            (when (> ξcount 0)
              (xah-find--print-file-count ξfp ξcount ξoutBufObj)
-             (when φwrite-to-file-p
-               (copy-file ξfp (concat ξfp ξbackupSuffix) t)
-               (write-region 1 (point-max) ξfp))))))
-     (xah-find--filter-list
-      (lambda (x)
-        (not (xah-find--ignore-dir-p x)))
-      (find-lisp-find-files φinput-dir φpath-regex)))
-    (xah-find--highlight-output ξoutBufObj )))
+             (when φwrite-to-file-p (copy-file ξfp (concat ξfp ξbackupSuffix) t) (write-region 1 (point-max) ξfp))))))
+     (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files φinput-dir φpath-regex)))
+    (xah-find--switch-to-output ξoutBufObj)))
 
 (provide 'xah-find)
 
