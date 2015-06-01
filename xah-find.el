@@ -62,7 +62,7 @@
 
 ;; I've been using this for 2 years, about every week, on linux (and Windows), on 5 thousand HTML files.
 
-;; home page: http://ergoemacs.org/emacs/xah-elisp-mode.html
+;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
 
 ;; Do you find it useful? Your support is much appreciated.
 ;; Buy Xah Emacs Tutorial
