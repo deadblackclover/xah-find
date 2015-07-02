@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Version: 2.1.2
+;; Version: 2.1.3
 ;; Created: 02 April 2012
 ;; Keywords: convenience, extensions, files, tools, unix
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
@@ -16,7 +16,7 @@
 
 ;;; Commentary:
 
-;; Provides emacs commands for find/replace string of files file in a directory, written entirely in emacs lisp.
+;; Provides emacs commands for find/replace text of files in a directory, written entirely in emacs lisp.
 
 ;; This package provides these commands:
 
@@ -62,9 +62,9 @@
 ;; USE CASE
 
 ;; To give a idea what file size, number of files, are practical, here's my typical use pattern:
-;; • Search 5 thousand HTML files.
-;; • Each file size are less than 2 megabytes.
-;; • search string size have been up to 1.3k characters.
+;; • 5 thousand HTML files match file name regex.
+;; • Each HTML file size are usually less than 200k bytes.
+;; • search string length have been up to 13 lines of text.
 
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
 
@@ -192,7 +192,7 @@ Version 2015-05-23"
   "Put cursor to previous occurrence."
   (interactive)
   (search-backward "❩" nil "NOERROR" )
-  (left-char) ; todo. this is a hack. move point to insider highlight propert so it's clickable
+  (left-char) ; todo. this is a hack. move point to inside of text with highlight property, so it's clickable. Look into modify xah-find--jump-to-place instead
   )
 
 (defun xah-find-next-file ()
@@ -204,7 +204,8 @@ Version 2015-05-23"
   "Put cursor to previous file."
   (interactive)
   (search-backward "❯" nil "NOERROR" )
-  (left-char))
+  (left-char) ; todo. this is a hack. move point to inside of text with highlight property, so it's clickable. Look into modify xah-find--jump-to-place instead
+  )
 
 (defun xah-find--mouse-jump-to-place (φevent)
   "Open file and put cursor at location of the occurrence."
@@ -234,7 +235,7 @@ Version 2015-05-23"
   (concat "~" φs (format-time-string "%Y%m%dT%H%M%S") "~"))
 
 (defun xah-find--current-date-time-string ()
-  "Returns current date-time string in this format 「2012-04-05T21:08:24-07:00」"
+  "Return current date-time string in this format 「2012-04-05T21:08:24-07:00」"
   (concat
    (format-time-string "%Y-%m-%dT%T")
    ((lambda (ξx) (format "%s:%s" (substring ξx 0 3) (substring ξx 3 5))) (format-time-string "%z"))))
@@ -267,15 +268,23 @@ Version 2015-05-23"
 ;;     xah-find-occur-separator)
 ;;    φbuff))
 
-(defun xah-find--occur-output (φp1 φp2 φfpath φbuff &optional φno-context-string-p)
-  "print to output, with text properties"
+(defun xah-find--occur-output (φp1 φp2 φfpath φbuff &optional φno-context-string-p φalt-color)
+  "print to output, with text properties.
+φp1 φp2 are region boundary. Text of current buffer are grabbed.
+φfpath is file path to be used as property value for clickable link.
+φbuff is the buffer to insert φp1 φp2 text.
+φno-context-string-p if true, don't add text before and after the region of interest.
+φalt-color if true, use a different highlight color."
   (let (
         (ξp3 (max 1 (- φp1 xah-find-context-char-count-before )))
         (ξp4 (min (point-max) (+ φp2 xah-find-context-char-count-after )))
         ξtextBefore
         ξtextMiddle
-        ξtextAfter)
-    (put-text-property φp1 φp2 'face (list :background "yellow"))
+        ξtextAfter
+        (ξcolor (if φalt-color
+                    (list :background "green")
+                  (list :background "yellow"))))
+    (put-text-property φp1 φp2 'face ξcolor)
     (put-text-property φp1 φp2 'xah-find-fpath φfpath)
     (put-text-property φp1 φp2 'xah-find-pos φp1)
     (add-text-properties φp1 φp2 '(mouse-face highlight))
@@ -554,7 +563,7 @@ Result is shown in buffer *xah-find output*.
              ;; (xah-find--print-occur-block (match-beginning 0) (match-end 0) ξoutBufObj)
              (xah-find--occur-output (match-beginning 0) (match-end 0) ξfp ξoutBufObj t)
              (replace-match φreplace-str φfixed-case-replace-p)
-             (xah-find--occur-output (match-beginning 0) (point) ξfp ξoutBufObj))
+             (xah-find--occur-output (match-beginning 0) (point) ξfp ξoutBufObj nil t))
            (when (> ξcount 0)
              (xah-find--print-file-count ξfp ξcount ξoutBufObj)
              (when φwrite-to-file-p (copy-file ξfp (concat ξfp ξbackupSuffix) t) (write-region 1 (point-max) ξfp))))))
