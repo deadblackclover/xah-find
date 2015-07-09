@@ -24,4 +24,4 @@ Features:
 
 • Reliably Find/Replace string that contains lots escape slashes or backslashes. For example, regex in source code, Microsoft Windows's path.
 
-Home page: http://ergoemacs.org/emacs/xah-elisp-mode.html
+Home page: http://ergoemacs.org/emacs/elisp-xah-find-text.html
