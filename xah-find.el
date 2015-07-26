@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Version: 2.1.5
+;; Version: 2.1.6
 ;; Created: 02 April 2012
 ;; Keywords: convenience, extensions, files, tools, unix
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
@@ -99,6 +99,7 @@
 
 (require 'find-lisp) ; in emacs
 (require 'ido)       ; in emacs
+(ido-common-initialization) ; 2015-07-26 else, when ido-read-directory-name is called, Return key insert line return instead of submit. For some reason i dunno.
 
 (defcustom xah-find-context-char-count-before 100 "Number of characters to print before search string."
   :group 'xah-find
