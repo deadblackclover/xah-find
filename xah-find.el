@@ -59,6 +59,22 @@
 ;;    ; more path regex here
 ;;   ])
 
+;; BACKGROUND COLORS
+
+;; By default, files matched are highlighted with a pink background and text matched is highlighted with a yellow background.
+;; If this does not render well in your emacs theme you can modify the background highlighting colors by adding the following setq in your init.
+;; "blue" and "green" are just examples of different colors, feel free to use whatever looks best for your theme.
+
+;; (setq
+;;  xah-find-file-background-color
+;;   "blue"
+;;   )
+
+;; (setq
+;;  xah-find-match-background-color
+;;   "green"
+;;   )
+
 ;; USE CASE
 
 ;; To give a idea what file size, number of files, are practical, here's my typical use pattern:
@@ -126,6 +142,18 @@
   xah-find-occur-separator
   "──────────────────────────────────────────────────────────────────────\n"
   "A string as visual separator."
+  :group 'xah-find )
+
+(defcustom
+  xah-find-file-background-color
+  "pink"
+  "Background color for files where a text match is found."
+  :group 'xah-find )
+
+(defcustom
+  xah-find-match-background-color
+  "yellow"
+  "Background color for text when a match is found."
   :group 'xah-find )
 
 
@@ -286,7 +314,7 @@ Version 2015-05-23"
         ξtextAfter
         (ξcolor (if φalt-color
                     (list :background "green")
-                  (list :background "yellow"))))
+                  (list :background xah-find-match-background-color))))
     (put-text-property φp1 φp2 'face ξcolor)
     (put-text-property φp1 φp2 'xah-find-fpath φfpath)
     (put-text-property φp1 φp2 'xah-find-pos φp1)
@@ -351,7 +379,7 @@ Version 2015-05-23"
         (setq p4 (- (point) 1))
         (put-text-property p3 p4 'xah-find-fpath (buffer-substring-no-properties p3 p4))
         (add-text-properties p3 p4 '(mouse-face highlight))
-        (put-text-property (line-beginning-position) (line-end-position) 'face (list :background "pink"))))
+        (put-text-property (line-beginning-position) (line-end-position) 'face (list :background xah-find-file-background-color))))
 
     (goto-char 1)
     (search-forward "━" nil "NOERROR")
