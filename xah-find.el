@@ -28,21 +28,21 @@
 
 ;; • Pure emacs lisp. No dependencies on unix/linux grep/sed/find. Especially useful on Windows.
 
-;; • Output is highlighted and clickable for jumping to occurence.
+;; • Output is highlighted and clickable for jumping to occurrence.
 
 ;; • Using emacs regex, not bash/perl etc regex.
 
-;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's easier to find or replace a block of text, especially programing language source code.
+;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's easier to find or replace a block of text, especially programming language source code.
 
 ;; • Reliably Find/Replace string that contains newline chars.
 
 ;; • Reliably Find/Replace string that contains lots Unicode chars. See http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
 
-;; • Reliably Find/Replace string that contains lots escape slashes or backslashes. For example, regex in source code, Microsoft Windows's path.
+;; • Reliably Find/Replace string that contains lots escape slashes or backslashes. For example, regex in source code, Microsoft Windows' path.
 
 ;; The result output is also not based on lines. Instead, visual separators are used for easy reading.
 
-;; For each occurance or replacement, n chars will be printed before and after. The number of chars to show is defined by `xah-find-context-char-count-before' and `xah-find-context-char-count-after'
+;; For each occurrence or replacement, n chars will be printed before and after. The number of chars to show is defined by `xah-find-context-char-count-before' and `xah-find-context-char-count-after'
 
 ;; Each “block of text” in output is one occurrence.
 ;; For example, if a line in a file has 2 occurrences, then the same line will be reported twice, as 2 “blocks”.
@@ -390,7 +390,7 @@ Version 2015-05-23"
 
 ;;;###autoload
 (defun xah-find-count (φsearch-str φcount-expr φcount-number φinput-dir φpath-regex)
-  "Report how many occurances of a string, of a given dir.
+  "Report how many occurrences of a string, of a given dir.
 Similar to `rgrep', but written in pure elisp.
 Result is shown in buffer *xah-find output*.
 Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-search' to change.
@@ -402,7 +402,7 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
       (setq ξoperator (ido-completing-read "Report on: " '("greater than" "greater or equal to" "equal" "not equal" "less than" "less or equal to" )))
       (read-string (format "Count %s: "  ξoperator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extention-regex "el") nil nil 'dired-regexp-history))))
+      (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history))))
   (let* ((ξoutBufName "*xah-find output*")
          ξoutBufObj
          (ξcountOperator
@@ -430,12 +430,12 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files φinput-dir φpath-regex)))
     (xah-find--switch-to-output ξoutBufObj)))
 
-(defun xah-find--get-default-file-extention-regex (&optional φdefault-ext)
-  "Returns a string, that is a regex to match a file extention.
-The result is based on current buffer's file extention.
+(defun xah-find--get-default-file-extension-regex (&optional φdefault-ext)
+  "Returns a string, that is a regex to match a file extension.
+The result is based on current buffer's file extension.
 If current file doesn't have extension or current buffer isn't a file, then extension φdefault-ext is used.
 φdefault-ext should be a string, without dot, such as 「\"el\"」.
-If φdefault-ext is nill, 「\"el\"」 is used.
+If φdefault-ext is nil, 「\"el\"」 is used.
 Example return value: 「ββ.htmlββ'」, where β is a backslash.
 "
   (let (
@@ -466,7 +466,7 @@ Result is shown in buffer *xah-find output*.
      (list
       (read-string (format "Search string (default %s): " ξdefault-input) nil 'query-replace-history ξdefault-input)
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extention-regex "el") nil nil 'dired-regexp-history)
+      (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history)
       (if current-prefix-arg (y-or-n-p "Fixed case in search?") nil )
       (if current-prefix-arg (y-or-n-p "Print surrounding Text?") t ))))
   (let* ((case-fold-search (not φfixed-case-search-p))
@@ -505,7 +505,7 @@ Result is shown in buffer *xah-find output*.
      (setq x-search-str (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word)))
      (setq x-replace-str (read-string (format "Replace string: ") nil 'query-replace-history))
      (setq x-input-dir (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH"))
-     (setq x-path-regex (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extention-regex "el") nil nil 'dired-regexp-history))
+     (setq x-path-regex (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history))
      (setq x-write-to-file-p (y-or-n-p "Write changes to file?"))
      (setq x-fixed-case-search-p (y-or-n-p "Fixed case in search?"))
      (setq x-fixed-case-replace-p (y-or-n-p "Fixed case in replacement?"))
@@ -546,7 +546,7 @@ Result is shown in buffer *xah-find output*.
    (list
     (read-string (format "Search regex (default %s): " (current-word)) nil 'query-replace-history (current-word))
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extention-regex "el") nil nil 'dired-regexp-history)
+    (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history)
     (y-or-n-p "Fixed case search?")
     (ido-completing-read "Print context level: " '("with context string" "just matched pattern" "none" ))))
   (let ((ξcount 0)
@@ -597,7 +597,7 @@ Result is shown in buffer *xah-find output*.
     (read-regexp "Find regex: " )
     (read-string (format "Replace string: ") nil 'query-replace-history)
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extention-regex "el") nil nil 'dired-regexp-history)
+    (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history)
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")))
