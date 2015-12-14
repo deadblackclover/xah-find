@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Version: 2.1.6
+;; Version: 2.2.0
 ;; Created: 02 April 2012
 ;; Keywords: convenience, extensions, files, tools, unix
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
@@ -56,24 +56,17 @@
 ;;  xah-find-dir-ignore-regex-list
 ;;  [
 ;;   "\\.git/"
-;;    ; more path regex here
+;;    ; more regex here. regex is matched against file full path
 ;;   ])
 
 ;; BACKGROUND COLORS
 
-;; By default, files matched are highlighted with a pink background and text matched is highlighted with a yellow background.
-;; If this does not render well in your emacs theme you can modify the background highlighting colors by adding the following setq in your init.
-;; "blue" and "green" are just examples of different colors, feel free to use whatever looks best for your theme.
+;; To change background color of result match string, put this in your emacs init:
 
-;; (setq
-;;  xah-find-file-background-color
-;;   "blue"
-;;   )
+;; (setq xah-find-file-background-color "blue")
+;; (setq xah-find-match-background-color "green")
 
-;; (setq
-;;  xah-find-match-background-color
-;;   "green"
-;;   )
+;; Call list-colors-display to see available colors names or hex syntax.
 
 ;; USE CASE
 
@@ -106,6 +99,9 @@
 
 ;; version 2.1.0, 2015-05-30 Complete rewrite.
 ;; version 1.0, 2012-04-02 First version.
+
+;;; CONTRIBUTOR
+;; 2015-12-09 Peter Buckley (dx-pbuckley). defcustom for result highlight color.
 
 ;;; TODO:
 ;; 2015-05-20 the feeble find-lisp-find-files is becoming a efficiency pain. It uses one regex to list all files, then you have to filter dir. There doesn't seem to be alternative except roll one's own or use third-party package
