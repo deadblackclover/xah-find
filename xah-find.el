@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Version: 2.2.0
+;; Version: 2.3.0
 ;; Created: 02 April 2012
 ;; Keywords: convenience, extensions, files, tools, unix
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
@@ -202,13 +202,20 @@ Version 2015-05-23"
 (defvar xah-find-keymap nil "Keybinding for `xah-find.el output'")
 (progn
   (setq xah-find-keymap (make-sparse-keymap))
+
+  (define-key xah-find-keymap (kbd "<left>") 'xah-find-previous-match)
+  (define-key xah-find-keymap (kbd "<right>") 'xah-find-next-match)
+  (define-key xah-find-keymap (kbd "<down>") 'xah-find-next-file)
+  (define-key xah-find-keymap (kbd "<up>") 'xah-find-previous-file)
+
   (define-key xah-find-keymap (kbd "TAB") 'xah-find-next-match)
-  (define-key xah-find-keymap (kbd "<S-tab>") 'xah-find-previous-match)
   (define-key xah-find-keymap (kbd "<backtab>") 'xah-find-previous-match)
+  (define-key xah-find-keymap (kbd "<mouse-1>") 'xah-find--mouse-jump-to-place)
   (define-key xah-find-keymap (kbd "M-n") 'xah-find-next-file)
   (define-key xah-find-keymap (kbd "M-p") 'xah-find-previous-file)
   (define-key xah-find-keymap (kbd "RET") 'xah-find--jump-to-place)
-  (define-key xah-find-keymap (kbd "<mouse-1>") 'xah-find--mouse-jump-to-place))
+
+)
 
 (defun xah-find-next-match ()
   "Put cursor to next occurrence."
