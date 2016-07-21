@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Version: 2.4.0
+;; Version: 2.5.0
 ;; Created: 02 April 2012
 ;; Keywords: convenience, extensions, files, tools, unix
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
@@ -130,11 +130,16 @@
 (require 'ido)       ; in emacs
 (ido-common-initialization) ; 2015-07-26 else, when ido-read-directory-name is called, Return key insert line return instead of submit. For some reason i dunno.
 
-(defcustom xah-find-context-char-count-before 100 "Number of characters to print before search string."
+(defcustom
+  xah-find-context-char-count-before
+  100
+  "Number of characters to print before search string."
   :group 'xah-find
   )
 
-(defcustom xah-find-context-char-count-after 30 "Number of characters to print after search string."
+(defcustom xah-find-context-char-count-after
+  30
+  "Number of characters to print after search string."
   :group 'xah-find
   )
 
@@ -168,6 +173,34 @@
   "yellow"
   "Background color for text when a match is found."
   :group 'xah-find )
+
+(defcustom xah-find-occur-prefix
+"[["
+  "A left-bracket string that marks matched text and navigate previous/next."
+  :group 'xah-find
+  )
+
+(defcustom xah-find-occur-postfix
+  "]]"
+  "A right-bracket string that marks matched text and navigate previous/next."
+  :group 'xah-find
+  )
+
+;; brackets 「 」 〈 〉 《 》 【 】 〔 〕 ⦗ ⦘ 『 』 〖 〗 〘 〙
+;; more at
+;; http://xahlee.info/comp/unicode_matching_brackets.html
+
+(defcustom xah-find-filepath-prefix
+"<<"
+  "A left-bracket string used to mark file path and navigate previous/next."
+  :group 'xah-find
+  )
+
+(defcustom xah-find-filepath-postfix
+  ">>"
+  "A right-bracket string used to mark file path and navigate previous/next."
+  :group 'xah-find
+  )
 
 
 
@@ -237,24 +270,24 @@ Version 2015-05-23"
 (defun xah-find-next-match ()
   "Put cursor to next occurrence."
   (interactive)
-  (search-forward "❨" nil "NOERROR" ))
+  (search-forward xah-find-occur-prefix nil "NOERROR" ))
 
 (defun xah-find-previous-match ()
   "Put cursor to previous occurrence."
   (interactive)
-  (search-backward "❩" nil "NOERROR" )
+  (search-backward xah-find-occur-postfix nil "NOERROR" )
   (left-char) ; todo. this is a hack. move point to inside of text with highlight property, so it's clickable. Look into modify xah-find--jump-to-place instead
   )
 
 (defun xah-find-next-file ()
   "Put cursor to next file."
   (interactive)
-  (search-forward "❮" nil "NOERROR" ))
+  (search-forward xah-find-filepath-prefix nil "NOERROR" ))
 
 (defun xah-find-previous-file ()
   "Put cursor to previous file."
   (interactive)
-  (search-backward "❯" nil "NOERROR" )
+  (search-backward xah-find-filepath-postfix nil "NOERROR" )
   (left-char) ; todo. this is a hack. move point to inside of text with highlight property, so it's clickable. Look into modify xah-find--jump-to-place instead
   )
 
@@ -298,9 +331,9 @@ Version 2015-05-23"
     "-*- coding: utf-8 -*-" "\n"
     "Datetime: " (xah-find--current-date-time-string) "\n"
     "Result of: " *cmd "\n"
-    (format "Directory ❮%s❯\n" *input-dir )
-    (format "Path regex ［%s］\n" *path-regex )
-    (format "Search string ❨%s❩\n" *search-str )
+    (format "Directory 「%s」\n" *input-dir )
+    (format "Path regex 「%s」\n" *path-regex )
+    (format "Search string 「%s」\n" *search-str )
     (when *replace-str (format "Replace string ❬%s❭\n" *replace-str))
     xah-find-file-separator
     )
@@ -311,9 +344,9 @@ Version 2015-05-23"
 ;;   (princ
 ;;    (concat
 ;;     (buffer-substring-no-properties (max 1 (- *p1 xah-find-context-char-count-before )) *p1 )
-;;     "❨"
+;;     xah-find-occur-prefix
 ;;     (buffer-substring-no-properties *p1 *p2 )
-;;     "❩"
+;;     xah-find-occur-postfix
 ;;     (buffer-substring-no-properties *p2 (min (point-max) (+ *p2 xah-find-context-char-count-after )))
 ;;     "\n"
 ;;     xah-find-occur-separator)
@@ -345,8 +378,8 @@ Version 2015-05-23"
     (setq -textAfter (buffer-substring *p2 -p4))
     (with-current-buffer *buff
       (if *no-context-string-p
-          (insert "❨" -textMiddle "❩" "\n" xah-find-occur-separator )
-        (insert -textBefore "❨" -textMiddle "❩" -textAfter "\n" xah-find-occur-separator )))))
+          (insert xah-find-occur-prefix -textMiddle xah-find-occur-postfix "\n" xah-find-occur-separator )
+        (insert -textBefore xah-find-occur-prefix -textMiddle xah-find-occur-postfix -textAfter "\n" xah-find-occur-separator )))))
 
 ;; (defun xah-find--print-replace-block (*p1 *p2 *buff)
 ;;   "print "
@@ -354,11 +387,17 @@ Version 2015-05-23"
 
 (defun xah-find--print-file-count (*filepath4287 *count8086 *buffObj32)
   "Print file path and count"
-  (princ (format "%d ❮%s❯\n%s" *count8086 *filepath4287 xah-find-file-separator) *buffObj32))
+  (princ (format "%d %s%s%s\n%s"
+                 *count8086
+                 xah-find-filepath-prefix
+                 *filepath4287
+                 xah-find-filepath-postfix
+                 xah-find-file-separator)
+         *buffObj32))
 
 ;; (defun xah-find--highlight-output (*buffer &optional *search-str *replace-str)
 ;;   "switch to *buffer and highlight stuff"
-;;   (let ((-search (concat "❨" *search-str "❩"))
+;;   (let ((-search (concat xah-find-occur-prefix *search-str xah-find-occur-postfix))
 ;;         (-rep (concat "❬" *replace-str "❭")))
 ;;     (switch-to-buffer *buffer)
 ;;     (fundamental-mode)
@@ -378,7 +417,7 @@ Version 2015-05-23"
 ;;          'face (list :background "green"))))
 ;;     (progn
 ;;       (goto-char 1)
-;;       (while (search-forward "❮" nil "NOERROR")
+;;       (while (search-forward xah-find-filepath-prefix nil "NOERROR")
 ;;         (put-text-property
 ;;          (line-beginning-position)
 ;;          (line-end-position)
@@ -393,9 +432,9 @@ Version 2015-05-23"
     (switch-to-buffer *buffer)
     (progn
       (goto-char 1)
-      (while (search-forward "❮" nil "NOERROR")
+      (while (search-forward xah-find-filepath-prefix nil "NOERROR")
         (setq p3 (point))
-        (search-forward "❯" nil "NOERROR")
+        (search-forward xah-find-filepath-postfix nil "NOERROR")
         (setq p4 (- (point) 1))
         (put-text-property p3 p4 'xah-find-fpath (buffer-substring-no-properties p3 p4))
         (add-text-properties p3 p4 '(mouse-face highlight))
@@ -403,7 +442,7 @@ Version 2015-05-23"
 
     (goto-char 1)
     (search-forward "━" nil "NOERROR")
-    (search-forward "❨" nil "NOERROR")
+    (search-forward xah-find-occur-prefix nil "NOERROR")
     (use-local-map xah-find-keymap)))
 
 
