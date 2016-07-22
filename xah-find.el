@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.org/ )
-;; Version: 2.5.0
+;; Version: 3.0.0
 ;; Created: 02 April 2012
 ;; Keywords: convenience, extensions, files, tools, unix
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
@@ -249,23 +249,32 @@ Version 2015-05-23"
 
 
 
-(defvar xah-find-keymap nil "Keybinding for `xah-find.el output'")
+(defvar xah-find-output-mode-map nil "Keybinding for `xah-find.el output'")
 (progn
-  (setq xah-find-keymap (make-sparse-keymap))
+  (setq xah-find-output-mode-map (make-sparse-keymap))
 
-  (define-key xah-find-keymap (kbd "<left>") 'xah-find-previous-match)
-  (define-key xah-find-keymap (kbd "<right>") 'xah-find-next-match)
-  (define-key xah-find-keymap (kbd "<down>") 'xah-find-next-file)
-  (define-key xah-find-keymap (kbd "<up>") 'xah-find-previous-file)
+  (define-key xah-find-output-mode-map (kbd "<left>") 'xah-find-previous-match)
+  (define-key xah-find-output-mode-map (kbd "<right>") 'xah-find-next-match)
+  (define-key xah-find-output-mode-map (kbd "<down>") 'xah-find-next-file)
+  (define-key xah-find-output-mode-map (kbd "<up>") 'xah-find-previous-file)
 
-  (define-key xah-find-keymap (kbd "TAB") 'xah-find-next-match)
-  (define-key xah-find-keymap (kbd "<backtab>") 'xah-find-previous-match)
-  (define-key xah-find-keymap (kbd "<mouse-1>") 'xah-find--mouse-jump-to-place)
-  (define-key xah-find-keymap (kbd "M-n") 'xah-find-next-file)
-  (define-key xah-find-keymap (kbd "M-p") 'xah-find-previous-file)
-  (define-key xah-find-keymap (kbd "RET") 'xah-find--jump-to-place)
-
+  (define-key xah-find-output-mode-map (kbd "TAB") 'xah-find-next-match)
+  (define-key xah-find-output-mode-map (kbd "<backtab>") 'xah-find-previous-match)
+  (define-key xah-find-output-mode-map (kbd "<mouse-1>") 'xah-find--mouse-jump-to-place)
+  (define-key xah-find-output-mode-map (kbd "M-n") 'xah-find-next-file)
+  (define-key xah-find-output-mode-map (kbd "M-p") 'xah-find-previous-file)
+  (define-key xah-find-output-mode-map (kbd "RET") 'xah-find--jump-to-place)
 )
+
+(define-derived-mode xah-find-output-mode prog-mode "ξfind"
+  "Major mode for reading output for xah-find commands.
+home page:
+URL `http://ergoemacs.org/emacs/elisp-xah-find-text.html'
+
+\\{xah-find-output-mode-map}"
+
+  :group 'xah-find
+  )
 
 (defun xah-find-next-match ()
   "Put cursor to next occurrence."
@@ -424,26 +433,28 @@ Version 2015-05-23"
 ;;          'face (list :background "pink"))))
 ;;     (goto-char 1)
 ;;     (search-forward-regexp "━+" nil "NOERROR")
-;;     (use-local-map xah-find-keymap)))
+;;     (use-local-map xah-find-output-mode-map)))
 
 (defun xah-find--switch-to-output (*buffer)
   "switch to *buffer and highlight stuff"
-  (let (p3 p4)
+  (let (-p3 -p4)
     (switch-to-buffer *buffer)
     (progn
       (goto-char 1)
       (while (search-forward xah-find-filepath-prefix nil "NOERROR")
-        (setq p3 (point))
+        (setq -p3 (point))
         (search-forward xah-find-filepath-postfix nil "NOERROR")
-        (setq p4 (- (point) 1))
-        (put-text-property p3 p4 'xah-find-fpath (buffer-substring-no-properties p3 p4))
-        (add-text-properties p3 p4 '(mouse-face highlight))
+        (setq -p4 (- (point) (length xah-find-filepath-postfix)))
+        (put-text-property -p3 -p4 'xah-find-fpath (buffer-substring-no-properties -p3 -p4))
+        (add-text-properties -p3 -p4 '(mouse-face highlight))
         (put-text-property (line-beginning-position) (line-end-position) 'face (list :background xah-find-file-background-color))))
 
     (goto-char 1)
     (search-forward "━" nil "NOERROR")
     (search-forward xah-find-occur-prefix nil "NOERROR")
-    (use-local-map xah-find-keymap)))
+    (xah-find-output-mode)
+    ;; (use-local-map xah-find-output-mode-map)
+    ))
 
 
 
@@ -453,7 +464,7 @@ Version 2015-05-23"
 Similar to `rgrep', but written in pure elisp.
 Result is shown in buffer *xah-find output*.
 Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-search' to change.
-\\{xah-find-keymap}"
+\\{xah-find-output-mode-map}"
   (interactive
    (let ( -operator)
      (list
@@ -519,7 +530,7 @@ Example return value: 「ββ.htmlββ'」, where β is a backslash.
 By default, not case sensitive, and print surrounding text.
 If `universal-argument' is called first, prompt to ask.
 Result is shown in buffer *xah-find output*.
-\\{xah-find-keymap}"
+\\{xah-find-output-mode-map}"
   (interactive
    (let ((-default-input (if (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end)) (current-word))))
      (list
@@ -558,7 +569,7 @@ No regex.
 Backup, if requested, backup filenames has suffix with timestamp, like this: ~xf20150531T233826~
 
 Result is shown in buffer *xah-find output*.
-\\{xah-find-keymap}"
+\\{xah-find-output-mode-map}"
   (interactive
    (let ( x-search-str x-replace-str x-input-dir x-path-regex x-write-to-file-p x-fixed-case-search-p x-fixed-case-replace-p x-backup-p )
      (setq x-search-str (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word)))
@@ -600,7 +611,7 @@ Result is shown in buffer *xah-find output*.
 (defun xah-find-text-regex (*search-regex *input-dir *path-regex *fixed-case-search-p *print-context-level )
   "Report files that contain a string pattern, similar to `rgrep'.
 Result is shown in buffer *xah-find output*.
-\\{xah-find-keymap}"
+\\{xah-find-output-mode-map}"
   (interactive
    (list
     (read-string (format "Search regex (default %s): " (current-word)) nil 'query-replace-history (current-word))
@@ -650,7 +661,7 @@ When called in lisp code:
 *FIXED-CASE-SEARCH-P sets `case-fold-search' for this operation.
 *FIXED-CASE-REPLACE-P if true, then the letter-case in replacement is literal. (this is relevant only if *FIXED-CASE-SEARCH-P is true.)
 Result is shown in buffer *xah-find output*.
-\\{xah-find-keymap}"
+\\{xah-find-output-mode-map}"
   (interactive
    (list
     (read-regexp "Find regex: " )
