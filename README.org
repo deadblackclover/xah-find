@@ -18,10 +18,10 @@ Features:
 
 • Using emacs regex, not bash/perl etc regex.
 
-• Reliably Find/Replace string that contains newline chars.
+• Reliably Find/Replace string that's multiple lines.
 
-• Reliably Find/Replace string that contains lots Unicode chars. See http://xahlee.info/comp/unix_uniq_unicode_bug.html and http://ergoemacs.org/emacs/emacs_grep_problem.html
+• Reliably Find/Replace string that contains lots Unicode characters. See [[http://xahlee.info/comp/unix_uniq_unicode_bug.html][unix uniq unicode bug]] and [[http://ergoemacs.org/emacs/emacs_grep_problem.html][emacs calling unix grep problem]]
 
-• Reliably Find/Replace string that contains lots escape slashes or backslashes. For example, regex in source code, Microsoft Windows's path.
+• Reliably Find/Replace string that contains lots escape slashes or backslashes. For example, Find/Replace string that's regex in source code.
 
 Home page: http://ergoemacs.org/emacs/elisp-xah-find-text.html
