@@ -1,10 +1,11 @@
-;;; xah-find.el --- find replace in pure emacs lisp. Purpose similar to unix grep/sed.
+;;; xah-find.el --- find replace in pure emacs lisp. Purpose similar to grep/sed. -*- coding: utf-8; lexical-binding: t; -*-
 
 ;; Copyright © 2012-2015 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.0.1
+;; Version: 3.0.3
 ;; Created: 02 April 2012
+;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
 
@@ -290,9 +291,10 @@ URL `http://ergoemacs.org/emacs/elisp-xah-find-text.html'
   )
 
 (defun xah-find--mouse-jump-to-place (*event)
-  "Open file and put cursor at location of the occurrence."
+  "Open file and put cursor at location of the occurrence.
+Version 2016-12-18"
   (interactive "e")
-  (let* ((-window (posn-window (event-end *event)))
+  (let* (
          (-pos (posn-point (event-end *event)))
          (-fpath (get-text-property -pos 'xah-find-fpath))
          (-pos-jump-to (get-text-property -pos 'xah-find-pos)))
@@ -320,7 +322,7 @@ URL `http://ergoemacs.org/emacs/elisp-xah-find-text.html'
   "Return current date-time string in this format 「2012-04-05T21:08:24-07:00」"
   (concat
    (format-time-string "%Y-%m-%dT%T")
-   ((lambda (-x) (format "%s:%s" (substring -x 0 3) (substring -x 3 5))) (format-time-string "%z"))))
+   (funcall (lambda (-x) (format "%s:%s" (substring -x 0 3) (substring -x 3 5))) (format-time-string "%z"))))
 
 (defun xah-find--print-header (*bufferObj *cmd *input-dir *path-regex *search-str &optional *replace-str )
   "Print things"
@@ -610,8 +612,7 @@ Result is shown in buffer *xah-find output*.
   (let ((-count 0)
         (-outBufName "*xah-find output*")
         -outBufObj
-        (-pos1 1) ; beginning of line
-        (-pos2 1))
+        )
     (setq *input-dir (file-name-as-directory *input-dir)) ; add ending slash
     (when (get-buffer -outBufName) (kill-buffer -outBufName))
     (setq -outBufObj (generate-new-buffer -outBufName))
@@ -684,9 +685,5 @@ Result is shown in buffer *xah-find output*.
     (xah-find--switch-to-output -outBufObj)))
 
 (provide 'xah-find)
-
-;; Local Variables:
-;; coding: utf-8
-;; End:
 
 ;;; xah-find.el ends here
