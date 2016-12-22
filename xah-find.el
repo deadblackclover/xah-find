@@ -1,9 +1,9 @@
 ;;; xah-find.el --- find replace in pure emacs lisp. Purpose similar to grep/sed. -*- coding: utf-8; lexical-binding: t; -*-
 
-;; Copyright © 2012-2015 by Xah Lee
+;; Copyright © 2012-2016 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.0.3
+;; Version: 3.0.4
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -464,7 +464,7 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
       (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history))))
   (let* ((-outBufName "*xah-find output*")
-         -outBufObj
+         -outBuffer
          (-countOperator
           (cond
            ((string-equal "less than" *count-expr ) '<)
@@ -476,8 +476,8 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
            (t (error "count expression 「%s」 is wrong!" *count-expr ))))
          (-countNumber (string-to-number *count-number)))
     (when (get-buffer -outBufName) (kill-buffer -outBufName))
-    (setq -outBufObj (generate-new-buffer -outBufName))
-    (xah-find--print-header -outBufObj "xah-find-count" *input-dir *path-regex *search-str )
+    (setq -outBuffer (generate-new-buffer -outBufName))
+    (xah-find--print-header -outBuffer "xah-find-count" *input-dir *path-regex *search-str )
     (mapc
      (lambda (-f)
        (let ((-count 0))
@@ -486,9 +486,9 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
            (goto-char 1)
            (while (search-forward *search-str nil "NOERROR") (setq -count (1+ -count)))
            (when (funcall -countOperator -count -countNumber)
-             (xah-find--print-file-count -f -count -outBufObj)))))
+             (xah-find--print-file-count -f -count -outBuffer)))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files *input-dir *path-regex)))
-    (xah-find--switch-to-output -outBufObj)))
+    (xah-find--switch-to-output -outBuffer)))
 
 (defun xah-find--get-default-file-extension-regex (&optional *default-ext)
   "Returns a string, that is a regex to match a file extension.
@@ -532,12 +532,12 @@ Result is shown in buffer *xah-find output*.
   (let* ((case-fold-search (not *fixed-case-search-p))
          (-count 0)
          (-outBufName "*xah-find output*")
-         -outBufObj
+         -outBuffer
          )
     (setq *input-dir (file-name-as-directory *input-dir)) ; normalize dir path
     (when (get-buffer -outBufName) (kill-buffer -outBufName))
-    (setq -outBufObj (generate-new-buffer -outBufName))
-    (xah-find--print-header -outBufObj "xah-find-text" *input-dir *path-regex *search-str1  )
+    (setq -outBuffer (generate-new-buffer -outBufName))
+    (xah-find--print-header -outBuffer "xah-find-text" *input-dir *path-regex *search-str1  )
     (mapc
      (lambda (-path)
        (setq -count 0)
@@ -545,10 +545,10 @@ Result is shown in buffer *xah-find output*.
          (insert-file-contents -path)
          (while (search-forward *search-str1 nil "NOERROR")
            (setq -count (1+ -count))
-           (when *printContext-p (xah-find--occur-output (match-beginning 0) (match-end 0) -path -outBufObj)))
-         (when (> -count 0) (xah-find--print-file-count -path -count -outBufObj))))
+           (when *printContext-p (xah-find--occur-output (match-beginning 0) (match-end 0) -path -outBuffer)))
+         (when (> -count 0) (xah-find--print-file-count -path -count -outBuffer))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files *input-dir *path-regex)))
-    (xah-find--switch-to-output -outBufObj)))
+    (xah-find--switch-to-output -outBuffer)))
 
 ;;;###autoload
 (defun xah-find-replace-text (*search-str *replace-str *input-dir *path-regex *write-to-file-p *fixed-case-search-p *fixed-case-replace-p &optional *backup-p)
@@ -574,11 +574,11 @@ Result is shown in buffer *xah-find output*.
        (setq x-backup-p nil))
      (list x-search-str x-replace-str x-input-dir x-path-regex x-write-to-file-p x-fixed-case-search-p x-fixed-case-replace-p x-backup-p )))
   (let ((-outBufName "*xah-find output*")
-        -outBufObj
+        -outBuffer
         (-backupSuffix (xah-find--backup-suffix "xf")))
     (when (get-buffer -outBufName) (kill-buffer -outBufName))
-    (setq -outBufObj (generate-new-buffer -outBufName))
-    (xah-find--print-header -outBufObj "xah-find-replace-text" *input-dir *path-regex *search-str *replace-str )
+    (setq -outBuffer (generate-new-buffer -outBufName))
+    (xah-find--print-header -outBuffer "xah-find-replace-text" *input-dir *path-regex *search-str *replace-str )
     (mapc
      (lambda (-f)
        (let ((case-fold-search (not *fixed-case-search-p))
@@ -588,20 +588,21 @@ Result is shown in buffer *xah-find output*.
            (while (search-forward *search-str nil t)
              (setq -count (1+ -count))
              (replace-match *replace-str *fixed-case-replace-p "literalreplace")
-             (xah-find--occur-output (match-beginning 0) (point) -f -outBufObj))
+             (xah-find--occur-output (match-beginning 0) (point) -f -outBuffer))
            (when (> -count 0)
              (when *write-to-file-p
                (when *backup-p (copy-file -f (concat -f -backupSuffix) t))
                (write-region 1 (point-max) -f))
-             (xah-find--print-file-count -f -count -outBufObj )))))
+             (xah-find--print-file-count -f -count -outBuffer )))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files *input-dir *path-regex)))
-    (xah-find--switch-to-output -outBufObj)))
+    (xah-find--switch-to-output -outBuffer)))
 
 ;;;###autoload
 (defun xah-find-text-regex (*search-regex *input-dir *path-regex *fixed-case-search-p *print-context-level )
   "Report files that contain a string pattern, similar to `rgrep'.
 Result is shown in buffer *xah-find output*.
-\\{xah-find-output-mode-map}"
+\\{xah-find-output-mode-map}
+Version 2016-12-21"
   (interactive
    (list
     (read-string (format "Search regex (default %s): " (current-word)) nil 'query-replace-history (current-word))
@@ -611,12 +612,12 @@ Result is shown in buffer *xah-find output*.
     (ido-completing-read "Print context level: " '("with context string" "just matched pattern" "none" ))))
   (let ((-count 0)
         (-outBufName "*xah-find output*")
-        -outBufObj
+        -outBuffer
         )
     (setq *input-dir (file-name-as-directory *input-dir)) ; add ending slash
     (when (get-buffer -outBufName) (kill-buffer -outBufName))
-    (setq -outBufObj (generate-new-buffer -outBufName))
-    (xah-find--print-header -outBufObj "xah-find-text-regex" *input-dir *path-regex *search-regex  )
+    (setq -outBuffer (generate-new-buffer -outBufName))
+    (xah-find--print-header -outBuffer "xah-find-text-regex" *input-dir *path-regex *search-regex  )
     (mapc
      (lambda (-fp)
        (setq -count 0)
@@ -628,12 +629,12 @@ Result is shown in buffer *xah-find output*.
            (cond
             ((equal *print-context-level "none") nil)
             ((equal *print-context-level "just matched pattern")
-             (xah-find--occur-output (match-beginning 0) (match-end 0) -fp -outBufObj))
+             (xah-find--occur-output (match-beginning 0) (match-end 0) -fp -outBuffer t))
             ((equal *print-context-level "with context string")
-             (xah-find--occur-output (match-beginning 0) (match-end 0) -fp -outBufObj t))))
-         (when (> -count 0) (xah-find--print-file-count -fp -count -outBufObj))))
+             (xah-find--occur-output (match-beginning 0) (match-end 0) -fp -outBuffer))))
+         (when (> -count 0) (xah-find--print-file-count -fp -count -outBuffer))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files *input-dir *path-regex)))
-    (xah-find--switch-to-output -outBufObj)))
+    (xah-find--switch-to-output -outBuffer)))
 
 ;;;###autoload
 (defun xah-find-replace-text-regex (*regex *replace-str *input-dir *path-regex *write-to-file-p *fixed-case-search-p *fixed-case-replace-p)
@@ -661,11 +662,11 @@ Result is shown in buffer *xah-find output*.
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")))
   (let ((-outBufName "*xah-find output*")
-        -outBufObj
+        -outBuffer
         (-backupSuffix (xah-find--backup-suffix "xfr")))
     (when (get-buffer -outBufName) (kill-buffer -outBufName))
-    (setq -outBufObj (generate-new-buffer -outBufName))
-    (xah-find--print-header -outBufObj "xah-find-replace-text-regex" *input-dir *path-regex *regex *replace-str )
+    (setq -outBuffer (generate-new-buffer -outBufName))
+    (xah-find--print-header -outBuffer "xah-find-replace-text-regex" *input-dir *path-regex *regex *replace-str )
     (mapc
      (lambda (-fp)
        (let ((-count 0))
@@ -674,15 +675,15 @@ Result is shown in buffer *xah-find output*.
            (setq case-fold-search (not *fixed-case-search-p))
            (while (re-search-forward *regex nil t)
              (setq -count (1+ -count))
-             ;; (xah-find--print-occur-block (match-beginning 0) (match-end 0) -outBufObj)
-             (xah-find--occur-output (match-beginning 0) (match-end 0) -fp -outBufObj t)
+             ;; (xah-find--print-occur-block (match-beginning 0) (match-end 0) -outBuffer)
+             (xah-find--occur-output (match-beginning 0) (match-end 0) -fp -outBuffer t)
              (replace-match *replace-str *fixed-case-replace-p)
-             (xah-find--occur-output (match-beginning 0) (point) -fp -outBufObj nil t))
+             (xah-find--occur-output (match-beginning 0) (point) -fp -outBuffer nil t))
            (when (> -count 0)
-             (xah-find--print-file-count -fp -count -outBufObj)
+             (xah-find--print-file-count -fp -count -outBuffer)
              (when *write-to-file-p (copy-file -fp (concat -fp -backupSuffix) t) (write-region 1 (point-max) -fp))))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files *input-dir *path-regex)))
-    (xah-find--switch-to-output -outBufObj)))
+    (xah-find--switch-to-output -outBuffer)))
 
 (provide 'xah-find)
 
