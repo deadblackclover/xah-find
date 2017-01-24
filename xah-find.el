@@ -1,9 +1,9 @@
 ;;; xah-find.el --- find replace in pure emacs lisp. Purpose similar to grep/sed. -*- coding: utf-8; lexical-binding: t; -*-
 
-;; Copyright © 2012-2016 by Xah Lee
+;; Copyright © 2012-2017 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.0.4
+;; Version: 3.1.0
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -33,7 +33,7 @@
 
 ;; • Using emacs regex, not bash/perl etc regex.
 
-;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's easier to find or replace a block of text, especially programming language source code.
+;; These commands treats find/replace string as sequence of chars, not as lines as in grep/sed, so it's easier to find or replace a text containing lots newlines, especially programming language source code.
 
 ;; • Reliably Find/Replace string that contains newline chars.
 
@@ -77,14 +77,7 @@
 ;;    ; more regex here. regex is matched against file full path
 ;;   ])
 
-;; BACKGROUND COLORS
-
-;; To change background color of result match string, put this in your emacs init:
-
-;; (setq xah-find-file-background-color "blue")
-;; (setq xah-find-match-background-color "green")
-
-;; Call list-colors-display to see available colors names or hex syntax.
+;; to customize the color for matched text, call `customize-group' and then give xah-find.
 
 ;; USE CASE
 
@@ -163,16 +156,25 @@
   "A string as visual separator."
   :group 'xah-find )
 
-(defcustom
-  xah-find-file-background-color
-  "pink"
-  "Background color for files where a text match is found."
+(defface xah-find-file-path-highlight
+  '((t :foreground "black"
+       :background "pink"
+       ))
+  "Face of file path where a text match is found."
   :group 'xah-find )
 
-(defcustom
-  xah-find-match-background-color
-  "yellow"
-  "Background color for text when a match is found."
+(defface xah-find-match-highlight
+  '((t :foreground "black"
+       :background "yellow"
+       ))
+  "Face for matched text."
+  :group 'xah-find )
+
+(defface xah-find-replace-highlight
+  '((t :foreground "black"
+       :background "green"
+       ))
+  "Face for replaced text."
   :group 'xah-find )
 
 (defcustom xah-find-occur-prefix
@@ -365,10 +367,10 @@ Version 2016-12-18"
         -textBefore
         -textMiddle
         -textAfter
-        (-color (if *alt-color
-                    (list :background "green")
-                  (list :background xah-find-match-background-color))))
-    (put-text-property *p1 *p2 'face -color)
+        (-face (if *alt-color
+                   'xah-find-replace-highlight
+                 'xah-find-match-highlight)))
+    (put-text-property *p1 *p2 'face -face)
     (put-text-property *p1 *p2 'xah-find-fpath *fpath)
     (put-text-property *p1 *p2 'xah-find-pos *p1)
     (add-text-properties *p1 *p2 '(mouse-face highlight))
@@ -438,7 +440,7 @@ Version 2016-12-18"
         (setq -p4 (- (point) (length xah-find-filepath-postfix)))
         (put-text-property -p3 -p4 'xah-find-fpath (buffer-substring-no-properties -p3 -p4))
         (add-text-properties -p3 -p4 '(mouse-face highlight))
-        (put-text-property (line-beginning-position) (line-end-position) 'face (list :background xah-find-file-background-color))))
+        (put-text-property (line-beginning-position) (line-end-position) 'face 'xah-find-file-path-highlight)))
 
     (goto-char 1)
     (search-forward "━" nil "NOERROR") ; todo, need fix
