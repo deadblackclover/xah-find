@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2017 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.1.0
+;; Version: 3.1.1
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -194,13 +194,13 @@
 ;; http://xahlee.info/comp/unicode_matching_brackets.html
 
 (defcustom xah-find-filepath-prefix
-"«"
+"❬"
   "A left-bracket string used to mark file path and navigate previous/next."
   :group 'xah-find
   )
 
 (defcustom xah-find-filepath-postfix
-  "»"
+  "❭"
   "A right-bracket string used to mark file path and navigate previous/next."
   :group 'xah-find
   )
@@ -306,14 +306,17 @@ Version 2016-12-18"
         (when -pos-jump-to (goto-char -pos-jump-to))))))
 
 (defun xah-find--jump-to-place ()
-  "Open file and put cursor at location of the occurrence."
+  "Open file and put cursor at location of the occurrence.
+ 2017-04-07"
   (interactive)
   (let ((-fpath (get-text-property (point) 'xah-find-fpath))
         (-pos-jump-to (get-text-property (point) 'xah-find-pos)))
     (when (not (null -fpath))
-      (progn
-        (find-file-other-window -fpath)
-        (when -pos-jump-to (goto-char -pos-jump-to))))))
+      (if (file-exists-p -fpath)
+          (progn
+            (find-file-other-window -fpath)
+            (when -pos-jump-to (goto-char -pos-jump-to)))
+        (error "File at 「%s」 does not exist." -fpath)))))
 
 
 (defun xah-find--backup-suffix (*s)
@@ -355,15 +358,16 @@ Version 2016-12-18"
 ;;    *buff))
 
 (defun xah-find--occur-output (*p1 *p2 *fpath *buff &optional *no-context-string-p *alt-color)
-  "print to output, with text properties.
-*p1 *p2 are region boundary. Text of current buffer are grabbed.
+  "Print result to a output buffer, with text properties (e.g. highlight and link).
+*p1 *p2 are region boundary. Region of current buffer are grabbed. The region typically is the searched text.
 *fpath is file path to be used as property value for clickable link.
-*buff is the buffer to insert *p1 *p2 text.
-*no-context-string-p if true, don't add text before and after the region of interest.
-*alt-color if true, use a different highlight color."
+*buff is the buffer to insert *p1 *p2 region.
+*no-context-string-p if true, don't add text before and after the region of interest. Else, `xah-find-context-char-count-before' number of chars are inserted before, and similar for `xah-find-context-char-count-after'.
+*alt-color if true, use a different highlight color face `xah-find-replace-highlight'. Else, use `xah-find-match-highlight'.
+ 2017-04-07"
   (let (
-        (-p3 (max 1 (- *p1 xah-find-context-char-count-before )))
-        (-p4 (min (point-max) (+ *p2 xah-find-context-char-count-after )))
+        (-begin (max 1 (- *p1 xah-find-context-char-count-before )))
+        (-end (min (point-max) (+ *p2 xah-find-context-char-count-after )))
         -textBefore
         -textMiddle
         -textAfter
@@ -375,9 +379,9 @@ Version 2016-12-18"
     (put-text-property *p1 *p2 'xah-find-pos *p1)
     (add-text-properties *p1 *p2 '(mouse-face highlight))
 
-    (setq -textBefore (buffer-substring -p3 *p1 ))
+    (setq -textBefore (buffer-substring -begin *p1 ))
     (setq -textMiddle (buffer-substring *p1 *p2 ))
-    (setq -textAfter (buffer-substring *p2 -p4))
+    (setq -textAfter (buffer-substring *p2 -end))
     (with-current-buffer *buff
       (if *no-context-string-p
           (insert xah-find-occur-prefix -textMiddle xah-find-occur-postfix "\n" xah-find-occur-separator )
