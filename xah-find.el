@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2017 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.1.2
+;; Version: 3.1.3
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -333,7 +333,7 @@ Version 2016-12-18"
   "Print things"
   (princ
    (concat
-    "-*- coding: utf-8 -*-" "\n"
+    "-*- coding: utf-8; mode: xah-find-output -*-" "\n"
     "Datetime: " (xah-find--current-date-time-string) "\n"
     "Result of: " *cmd "\n"
     (format "Directory 「%s」\n" *input-dir )
