@@ -29,7 +29,7 @@ Home page: http://ergoemacs.org/emacs/elisp-xah-find-text.html
 Put in 5 bucks in my patreon.
 https://www.patreon.com/xahlee
 
-or http://paypal.com
+or https://paypal.com
 pay to xah@xahlee.org
 
 Thanks.
