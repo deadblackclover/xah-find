@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2017 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.1.20170811
+;; Version: 3.1.20170820
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -13,7 +13,7 @@
 
 ;;; License:
 
-;; You can redistribute this program and/or modify it under the terms of the GNU General Public License version 2.
+;; You can redistribute this program and/or modify it under the terms of the GNU General Public License version 3.
 
 ;;; Commentary:
 
