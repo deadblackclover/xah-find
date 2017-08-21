@@ -7,13 +7,10 @@
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
+;; License: GPL v3
 ;; Homepage: http://ergoemacs.org/emacs/elisp-xah-find-text.html
 
 ;; This file is not part of GNU Emacs.
-
-;;; License:
-
-;; You can redistribute this program and/or modify it under the terms of the GNU General Public License version 3.
 
 ;;; Commentary:
 
