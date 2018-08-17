@@ -1,9 +1,9 @@
 ;;; xah-find.el --- find replace in pure emacs lisp. Purpose similar to grep/sed. -*- coding: utf-8; lexical-binding: t; -*-
 
-;; Copyright © 2012-2017 by Xah Lee
+;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.2.20180310
+;; Version: 3.2.20180816210258
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -497,8 +497,8 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
   "Returns a string, that is a regex to match a file extension.
 The result is based on current buffer's file extension.
 If current file doesn't have extension or current buffer isn't a file, then extension @default-ext is used.
-@default-ext should be a string, without dot, such as 「\"el\"」.
-If @default-ext is nil, 「\"el\"」 is used.
+@default-ext should be a string, without dot, such as 「\"html\"」.
+If @default-ext is nil, 「\"html\"」 is used.
 Example return value: 「ββ.htmlββ'」, where β is a backslash.
 "
   (let (
@@ -507,15 +507,15 @@ Example return value: 「ββ.htmlββ'」, where β is a backslash.
         $default-ext
         )
     (setq $default-ext (if (null @default-ext)
-                           (progn "el")
+                           (progn "html")
                          (progn @default-ext)))
     (if $buff-is-file-p
         (progn
           (setq $fname-ext (file-name-extension (buffer-file-name)))
           (if (or (null $fname-ext) (equal $fname-ext ""))
-              (progn (concat "\\." $default-ext "\\'"))
-            (progn (concat "\\." $fname-ext "\\'"))))
-      (progn (concat "\\." $default-ext "\\'")))))
+              (progn (concat "\\." $default-ext "$"))
+            (progn (concat "\\." $fname-ext "$"))))
+      (progn (concat "\\." $default-ext "$")))))
 
 ;;;###autoload
 (defun xah-find-text (@search-str1 @input-dir @path-regex @fixed-case-search-p @printContext-p)
@@ -529,7 +529,7 @@ Result is shown in buffer *xah-find output*.
      (list
       (read-string (format "Search string (default %s): " $default-input) nil 'query-replace-history $default-input)
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history)
+      (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "html") nil nil 'dired-regexp-history)
       (if current-prefix-arg (y-or-n-p "Fixed case in search?") nil )
       (if current-prefix-arg (y-or-n-p "Print surrounding Text?") t ))))
   (let* ((case-fold-search (not @fixed-case-search-p))
