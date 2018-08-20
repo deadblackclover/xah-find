@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.2.20180816210258
+;; Version: 3.2.20180820073045
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -640,7 +640,7 @@ Version 2016-12-21"
     (xah-find--switch-to-output $outBuffer)))
 
 ;;;###autoload
-(defun xah-find-replace-text-regex (@regex @replace-str @input-dir @path-regex @write-to-file-p @fixed-case-search-p @fixed-case-replace-p)
+(defun xah-find-replace-text-regex (@regex @replace-str @input-dir @path-regex @write-to-file-p @fixed-case-search-p @fixed-case-replace-p @backup-p)
   "Find/Replace by regex in all files of a directory.
 
 Backup, if requested, backup filenames has suffix with timestamp, like this: ~xf20150531T233826~
@@ -654,7 +654,9 @@ When called in lisp code:
 @FIXED-CASE-SEARCH-P sets `case-fold-search' for this operation.
 @FIXED-CASE-REPLACE-P if true, then the letter-case in replacement is literal. (this is relevant only if @FIXED-CASE-SEARCH-P is true.)
 Result is shown in buffer *xah-find output*.
-\\{xah-find-output-mode-map}"
+\\{xah-find-output-mode-map}
+
+Version 2018-08-20"
   (interactive
    (list
     (read-regexp "Find regex: " )
@@ -663,7 +665,8 @@ Result is shown in buffer *xah-find output*.
     (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history)
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
-    (y-or-n-p "Fixed case in replacement?")))
+    (y-or-n-p "Fixed case in replacement?")
+    (y-or-n-p "Make backup?")))
   (let (($outBufName "*xah-find output*")
         $outBuffer
         ($backupSuffix (xah-find--backup-suffix "xfr")))
@@ -684,7 +687,10 @@ Result is shown in buffer *xah-find output*.
              (xah-find--occur-output (match-beginning 0) (point) $fp $outBuffer t t))
            (when (> $count 0)
              (xah-find--print-file-count $fp $count $outBuffer)
-             (when @write-to-file-p (copy-file $fp (concat $fp $backupSuffix) t) (write-region 1 (point-max) $fp))))))
+             (when @write-to-file-p
+               (when @backup-p
+                 (copy-file $fp (concat $fp $backupSuffix) t))
+               (write-region 1 (point-max) $fp))))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files @input-dir @path-regex)))
     (xah-find--switch-to-output $outBuffer)))
 
