@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.4.20180830143508
+;; Version: 3.4.20180830164555
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -363,7 +363,7 @@ Version 2016-12-18"
    (format-time-string "%Y-%m-%dT%T")
    (funcall (lambda ($x) (format "%s:%s" (substring $x 0 3) (substring $x 3 5))) (format-time-string "%z"))))
 
-(defun xah-find--print-header (@bufferObj @cmd @input-dir @path-regex @search-str &optional @replace-str )
+(defun xah-find--print-header (@bufferObj @cmd @input-dir @path-regex @search-str &optional @replace-str @write-file-p @backup-p)
   "Print things"
   (princ
    (concat
@@ -372,24 +372,13 @@ Version 2016-12-18"
     "Result of: " @cmd "\n"
     (format "Directory: %s\n" @input-dir )
     (format "Path regex: %s\n" @path-regex )
+    (format "Write to file: %s\n" @write-file-p )
+    (format "Backup: %s\n" @backup-p )
     (format "Search string: %s\n" @search-str )
     (when @replace-str (format "Replace string ❬%s❭\n" @replace-str))
     xah-find-file-separator
     )
    @bufferObj))
-
-;; (defun xah-find--print-occur-block (@p1 @p2 @buff)
-;;   "print "
-;;   (princ
-;;    (concat
-;;     (buffer-substring-no-properties (max 1 (- @p1 xah-find-context-char-count-before )) @p1 )
-;;     xah-find-occur-prefix
-;;     (buffer-substring-no-properties @p1 @p2 )
-;;     xah-find-occur-postfix
-;;     (buffer-substring-no-properties @p2 (min (point-max) (+ @p2 xah-find-context-char-count-after )))
-;;     "\n"
-;;     xah-find-occur-separator)
-;;    @buff))
 
 (defun xah-find--occur-output (@p1 @p2 @fpath @buff &optional @no-context-string-p @alt-color)
   "Print result to a output buffer, with text properties (e.g. highlight and link).
@@ -402,21 +391,26 @@ Version 2016-12-18"
   (let* (
          ($begin (max 1 (- @p1 xah-find-context-char-count-before )))
          ($end (min (point-max) (+ @p2 xah-find-context-char-count-after )))
-         ($textBefore (buffer-substring $begin @p1 ))
-         ($textMiddle (buffer-substring @p1 @p2 ))
-         ($textAfter (buffer-substring @p2 $end))
-         ($face (if @alt-color
-                    'xah-find-replace-highlight
-                  'xah-find-match-highlight)))
+         ($textBefore (if @no-context-string-p "" (buffer-substring-no-properties $begin @p1 )))
+         $textMiddle
+         ($textAfter (if @no-context-string-p "" (buffer-substring-no-properties @p2 $end)))
+         ($face (if @alt-color 'xah-find-replace-highlight 'xah-find-match-highlight))
+         $bracketL
+         $bracketR
+         )
     (put-text-property @p1 @p2 'face $face)
     (put-text-property @p1 @p2 'xah-find-fpath @fpath)
     (put-text-property @p1 @p2 'xah-find-pos @p1)
     (add-text-properties @p1 @p2 '(mouse-face highlight))
 
+    (setq $textMiddle (buffer-substring @p1 @p2 ))
+
+    (if @alt-color
+        (setq $bracketL xah-find-replace-prefix $bracketR xah-find-replace-postfix )
+      (setq $bracketL xah-find-occur-prefix $bracketR xah-find-occur-postfix ))
+
     (with-current-buffer @buff
-      (if @no-context-string-p
-          (insert xah-find-occur-prefix $textMiddle xah-find-occur-postfix "\n" xah-find-occur-separator )
-        (insert $textBefore xah-find-occur-prefix $textMiddle xah-find-occur-postfix $textAfter "\n" xah-find-occur-separator )))))
+      (insert $textBefore $bracketL $textMiddle $bracketR $textAfter "\n" xah-find-occur-separator ))))
 
 ;; (defun xah-find--print-replace-block (@p1 @p2 @buff)
 ;;   "print "
@@ -615,7 +609,7 @@ Result is shown in buffer *xah-find output*.
         ($backupSuffix (xah-find--backup-suffix "xf")))
     (when (get-buffer $outBufName) (kill-buffer $outBufName))
     (setq $outBuffer (generate-new-buffer $outBufName))
-    (xah-find--print-header $outBuffer "xah-find-replace-text" @input-dir @path-regex @search-str @replace-str )
+    (xah-find--print-header $outBuffer "xah-find-replace-text" @input-dir @path-regex @search-str @replace-str @write-to-file-p @backup-p)
     (mapc
      (lambda ($f)
        (let ((case-fold-search (not @fixed-case-search-p))
@@ -674,7 +668,7 @@ Version 2016-12-21"
     (xah-find--switch-to-output $outBuffer)))
 
 ;;;###autoload
-(defun xah-find-replace-text-regex (@regex @replace-str @input-dir @path-regex @write-to-file-p @fixed-case-search-p @fixed-case-replace-p @backup-p)
+(defun xah-find-replace-text-regex (@regex @replace-str @input-dir @path-regex @write-to-file-p @fixed-case-search-p @fixed-case-replace-p @show-contex-p @backup-p)
   "Find/Replace by regex in all files of a directory.
 
 Backup, if requested, backup filenames has suffix with timestamp, like this: ~xf20150531T233826~
@@ -700,13 +694,14 @@ Version 2018-08-20"
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")
+    (y-or-n-p "Show context before after in output?")
     (y-or-n-p "Make backup?")))
   (let (($outBufName "*xah-find output*")
         $outBuffer
         ($backupSuffix (xah-find--backup-suffix "xfr")))
     (when (get-buffer $outBufName) (kill-buffer $outBufName))
     (setq $outBuffer (generate-new-buffer $outBufName))
-    (xah-find--print-header $outBuffer "xah-find-replace-text-regex" @input-dir @path-regex @regex @replace-str )
+    (xah-find--print-header $outBuffer "xah-find-replace-text-regex" @input-dir @path-regex @regex @replace-str @write-to-file-p @backup-p )
     (mapc
      (lambda ($fp)
        (let (($count 0))
@@ -718,7 +713,7 @@ Version 2018-08-20"
              ;; (xah-find--print-occur-block (match-beginning 0) (match-end 0) $outBuffer)
              (xah-find--occur-output (match-beginning 0) (match-end 0) $fp $outBuffer t)
              (replace-match @replace-str @fixed-case-replace-p)
-             (xah-find--occur-output (match-beginning 0) (point) $fp $outBuffer t t))
+             (xah-find--occur-output (match-beginning 0) (point) $fp $outBuffer (not @show-contex-p) t))
            (when (> $count 0)
              (xah-find--print-file-count $fp $count $outBuffer)
              (when @write-to-file-p
