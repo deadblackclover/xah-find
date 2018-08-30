@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.2.20180820073045
+;; Version: 3.4.20180830143508
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -149,7 +149,7 @@
 
 (defcustom
   xah-find-occur-separator
-  "--------------------------------------------------\n"
+  "\n"
   "A string as visual separator."
   :group 'xah-find )
 
@@ -186,18 +186,30 @@
   :group 'xah-find
   )
 
+(defcustom xah-find-replace-prefix
+"『"
+  "A left-bracket string that marks matched text and navigate previous/next."
+  :group 'xah-find
+  )
+
+(defcustom xah-find-replace-postfix
+  "』"
+  "A right-bracket string that marks matched text and navigate previous/next."
+  :group 'xah-find
+  )
+
 ;; brackets 「 」 〈 〉 《 》 【 】 〔 〕 ⦗ ⦘ 『 』 〖 〗 〘 〙
 ;; more at
 ;; http://xahlee.info/comp/unicode_matching_brackets.html
 
 (defcustom xah-find-filepath-prefix
-"❬"
+"〈"
   "A left-bracket string used to mark file path and navigate previous/next."
   :group 'xah-find
   )
 
 (defcustom xah-find-filepath-postfix
-  "❭"
+  "〉"
   "A right-bracket string used to mark file path and navigate previous/next."
   :group 'xah-find
   )
@@ -249,12 +261,35 @@ Version 2015-05-23"
   (define-key xah-find-output-mode-map (kbd "RET") 'xah-find--jump-to-place)
   )
 
+(defvar xah-find-output-syntax-table nil "Syntax table for `xah-find-output-mode'.")
+
+(setq xah-find-output-syntax-table
+      (let ( (synTable (make-syntax-table)))
+        (modify-syntax-entry ?\" "." synTable)
+        synTable))
+
+(setq xah-find-font-lock-keywords
+      (let (
+            (xMatch (format "%s\\([^%s]+\\)%s" xah-find-occur-prefix xah-find-occur-postfix xah-find-occur-postfix))
+
+            (xRep (format "%s\\([^%s]+\\)%s" xah-find-replace-prefix xah-find-replace-postfix xah-find-replace-postfix))
+            (xfPath (format "%s\\([^%s]+\\)%s" xah-find-filepath-prefix xah-find-filepath-postfix xah-find-filepath-postfix)))
+
+        `(
+          (,xMatch  . (1 'xah-find-match-highlight))
+          (,xRep . (1 'xah-find-replace-highlight))
+          (,xfPath . (1 'xah-find-file-path-highlight)))))
+
 (define-derived-mode xah-find-output-mode fundamental-mode "∑xah-find"
   "Major mode for reading output for xah-find commands.
 home page:
 URL `http://ergoemacs.org/emacs/elisp-xah-find-text.html'
 
 \\{xah-find-output-mode-map}"
+
+  (setq font-lock-defaults '((xah-find-font-lock-keywords)))
+
+(set-syntax-table xah-find-output-syntax-table)
 
   (progn
     (when (null buffer-display-table)
@@ -308,12 +343,14 @@ Version 2016-12-18"
   (interactive)
   (let (($fpath (get-text-property (point) 'xah-find-fpath))
         ($pos-jump-to (get-text-property (point) 'xah-find-pos)))
-    (when (not (null $fpath))
-      (if (file-exists-p $fpath)
-          (progn
-            (find-file-other-window $fpath)
-            (when $pos-jump-to (goto-char $pos-jump-to)))
-        (error "File at 「%s」 does not exist." $fpath)))))
+    (if $fpath
+        (if (file-exists-p $fpath)
+            (progn
+              (find-file-other-window $fpath)
+              (when $pos-jump-to (goto-char $pos-jump-to)))
+          (error "File at 「%s」 does not exist." $fpath))
+      (progn
+        (find-file-at-point  (thing-at-point 'filename ))))))
 
 
 (defun xah-find--backup-suffix (@s)
@@ -333,9 +370,9 @@ Version 2016-12-18"
     "-*- coding: utf-8; mode: xah-find-output -*-" "\n"
     "Datetime: " (xah-find--current-date-time-string) "\n"
     "Result of: " @cmd "\n"
-    (format "Directory 「%s」\n" @input-dir )
-    (format "Path regex 「%s」\n" @path-regex )
-    (format "Search string 「%s」\n" @search-str )
+    (format "Directory: %s\n" @input-dir )
+    (format "Path regex: %s\n" @path-regex )
+    (format "Search string: %s\n" @search-str )
     (when @replace-str (format "Replace string ❬%s❭\n" @replace-str))
     xah-find-file-separator
     )
@@ -362,23 +399,20 @@ Version 2016-12-18"
 @no-context-string-p if true, don't add text before and after the region of interest. Else, `xah-find-context-char-count-before' number of chars are inserted before, and similar for `xah-find-context-char-count-after'.
 @alt-color if true, use a different highlight color face `xah-find-replace-highlight'. Else, use `xah-find-match-highlight'.
  2017-04-07"
-  (let (
-        ($begin (max 1 (- @p1 xah-find-context-char-count-before )))
-        ($end (min (point-max) (+ @p2 xah-find-context-char-count-after )))
-        $textBefore
-        $textMiddle
-        $textAfter
-        ($face (if @alt-color
-                   'xah-find-replace-highlight
-                 'xah-find-match-highlight)))
+  (let* (
+         ($begin (max 1 (- @p1 xah-find-context-char-count-before )))
+         ($end (min (point-max) (+ @p2 xah-find-context-char-count-after )))
+         ($textBefore (buffer-substring $begin @p1 ))
+         ($textMiddle (buffer-substring @p1 @p2 ))
+         ($textAfter (buffer-substring @p2 $end))
+         ($face (if @alt-color
+                    'xah-find-replace-highlight
+                  'xah-find-match-highlight)))
     (put-text-property @p1 @p2 'face $face)
     (put-text-property @p1 @p2 'xah-find-fpath @fpath)
     (put-text-property @p1 @p2 'xah-find-pos @p1)
     (add-text-properties @p1 @p2 '(mouse-face highlight))
 
-    (setq $textBefore (buffer-substring $begin @p1 ))
-    (setq $textMiddle (buffer-substring @p1 @p2 ))
-    (setq $textAfter (buffer-substring @p2 $end))
     (with-current-buffer @buff
       (if @no-context-string-p
           (insert xah-find-occur-prefix $textMiddle xah-find-occur-postfix "\n" xah-find-occur-separator )
@@ -595,7 +629,7 @@ Result is shown in buffer *xah-find output*.
            (when (> $count 0)
              (when @write-to-file-p
                (when @backup-p (copy-file $f (concat $f $backupSuffix) t))
-               (write-region 1 (point-max) $f))
+               (write-region 1 (point-max) $f nil 3) )
              (xah-find--print-file-count $f $count $outBuffer )))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files @input-dir @path-regex)))
     (xah-find--switch-to-output $outBuffer)))
@@ -690,7 +724,7 @@ Version 2018-08-20"
              (when @write-to-file-p
                (when @backup-p
                  (copy-file $fp (concat $fp $backupSuffix) t))
-               (write-region 1 (point-max) $fp))))))
+               (write-region 1 (point-max) $fp nil 3))))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x))) (find-lisp-find-files @input-dir @path-regex)))
     (xah-find--switch-to-output $outBuffer)))
 
