@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 3.4.20180922212219
+;; Version: 4.0.20181021171120
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -139,7 +139,7 @@
   )
 
 (defcustom xah-find-file-separator
-  "================================================================================\n\n"
+  "-- ──────────────────────────────────────────────────────────\n\n"
   "A string as visual separator."
   :group 'xah-find )
 
@@ -171,42 +171,53 @@
   :group 'xah-find )
 
 (defcustom xah-find-occur-prefix
-"「"
-  "A left-bracket string that marks matched text and navigate previous/next."
+"〖"
+  "A left-bracket string that marks matched text and navigate previous/next. This string should basically never occure in your files. If it does, jumping to the location may not work."
   :group 'xah-find
   )
 
 (defcustom xah-find-occur-postfix
-  "」"
-  "A right-bracket string that marks matched text and navigate previous/next."
+  "〗"
+  "A right-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'."
   :group 'xah-find
   )
 
 (defcustom xah-find-replace-prefix
 "『"
-  "A left-bracket string that marks matched text and navigate previous/next."
+  "A left-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'."
   :group 'xah-find
   )
 
 (defcustom xah-find-replace-postfix
   "』"
-  "A right-bracket string that marks matched text and navigate previous/next."
+  "A right-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'."
   :group 'xah-find
   )
 
-;; brackets 「 」 〈 〉 《 》 【 】 〔 〕 ⦗ ⦘ 『 』 〖 〗 〘 〙
-;; more at
+;; more brackets at
 ;; http://xahlee.info/comp/unicode_matching_brackets.html
 
 (defcustom xah-find-filepath-prefix
-"〈"
-  "A left-bracket string used to mark file path and navigate previous/next."
+"〘"
+  "A left-bracket string used to mark file path and navigate previous/next. See also `xah-find-occur-prefix'."
   :group 'xah-find
   )
 
 (defcustom xah-find-filepath-postfix
-  "〉"
-  "A right-bracket string used to mark file path and navigate previous/next."
+  "〙"
+  "A right-bracket string used to mark file path and navigate previous/next. See also `xah-find-occur-prefix'."
+  :group 'xah-find
+  )
+
+(defcustom xah-find-pos-prefix
+"❪"
+  "A string of left bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'."
+  :group 'xah-find
+  )
+
+(defcustom xah-find-pos-postfix
+"❫"
+  "A string of right bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'."
   :group 'xah-find
   )
 
@@ -263,6 +274,8 @@ Version 2018-09-22"
 (setq xah-find-output-syntax-table
       (let ( (synTable (make-syntax-table)))
         (modify-syntax-entry ?\" "." synTable)
+        ;; (modify-syntax-entry ?〖 "(〗" synTable)
+        ;; (modify-syntax-entry ?〗 "(〖" synTable)
         synTable))
 
 (setq xah-find-font-lock-keywords
@@ -334,12 +347,29 @@ Version 2016-12-18"
         (find-file-other-window $fpath)
         (when $pos-jump-to (goto-char $pos-jump-to))))))
 
+;; (defun xah-find--jump-to-place ()
+;;   "Open file and put cursor at location of the occurrence.
+;; Version 2017-04-07"
+;;   (interactive)
+;;   (let (($fpath (get-text-property (point) 'xah-find-fpath))
+;;         ($pos-jump-to (get-text-property (point) 'xah-find-pos)))
+;;     (if $fpath
+;;         (if (file-exists-p $fpath)
+;;             (progn
+;;               (find-file-other-window $fpath)
+;;               (when $pos-jump-to (goto-char $pos-jump-to)))
+;;           (error "File at 「%s」 does not exist." $fpath))
+;;       (insert "\n"))))
+
 (defun xah-find--jump-to-place ()
   "Open file and put cursor at location of the occurrence.
- 2017-04-07"
+Version 2018-10-21"
   (interactive)
   (let (($fpath (get-text-property (point) 'xah-find-fpath))
-        ($pos-jump-to (get-text-property (point) 'xah-find-pos)))
+        ($pos-jump-to (get-text-property (point) 'xah-find-pos))
+        (p0 (point))
+        p1 p2
+        )
     (if $fpath
         (if (file-exists-p $fpath)
             (progn
@@ -347,7 +377,26 @@ Version 2016-12-18"
               (when $pos-jump-to (goto-char $pos-jump-to)))
           (error "File at 「%s」 does not exist." $fpath))
       (progn
-        (find-file-at-point  (thing-at-point 'filename ))))))
+        (save-excursion
+          (goto-char p0)
+          (search-backward xah-find-file-separator)
+          (search-forward xah-find-filepath-prefix )
+          (setq p1 (point))
+          (search-forward xah-find-filepath-postfix)
+          (setq p2 (1- (point)))
+          (setq $fpath (buffer-substring-no-properties p1 p2))
+
+          (goto-char p0)
+          (search-backward xah-find-pos-prefix )
+          (setq p1 (1+ (point)))
+          (search-forward xah-find-pos-postfix )
+          (setq p2 (1- (point)))
+          (setq $pos-jump-to (string-to-number (buffer-substring-no-properties p1 p2))))
+        (if (file-exists-p $fpath)
+            (progn
+              (find-file-other-window $fpath)
+              (when $pos-jump-to (goto-char $pos-jump-to)))
+          (error "File at 「%s」 does not exist." $fpath))))))
 
 
 (defun xah-find--backup-suffix (@s)
@@ -394,6 +443,7 @@ Version 2016-12-18"
          ($face (if @alt-color 'xah-find-replace-highlight 'xah-find-match-highlight))
          $bracketL
          $bracketR
+$positionText
          )
     (put-text-property @p1 @p2 'face $face)
     (put-text-property @p1 @p2 'xah-find-fpath @fpath)
@@ -407,7 +457,14 @@ Version 2016-12-18"
       (setq $bracketL xah-find-occur-prefix $bracketR xah-find-occur-postfix ))
 
     (with-current-buffer @buff
-      (insert $textBefore $bracketL $textMiddle $bracketR $textAfter "\n" xah-find-occur-separator ))))
+      (insert $textBefore
+              (format "%s%s%s" xah-find-pos-prefix @p1 xah-find-pos-postfix)
+              $bracketL
+              $textMiddle
+              $bracketR
+              $textAfter
+              "\n"
+              xah-find-occur-separator ))))
 
 ;; (defun xah-find--print-replace-block (@p1 @p2 @buff)
 ;;   "print "
