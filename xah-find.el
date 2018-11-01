@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.0.20181021171120
+;; Version: 4.1.20181101083213
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -139,13 +139,13 @@
   )
 
 (defcustom xah-find-file-separator
-  "-- ──────────────────────────────────────────────────────────\n\n"
+  "ff━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
   "A string as visual separator."
   :group 'xah-find )
 
 (defcustom
   xah-find-occur-separator
-  "\n"
+  "oo────────────────────────────────────────────────────────────\n"
   "A string as visual separator."
   :group 'xah-find )
 
@@ -443,7 +443,7 @@ Version 2018-10-21"
          ($face (if @alt-color 'xah-find-replace-highlight 'xah-find-match-highlight))
          $bracketL
          $bracketR
-$positionText
+         $positionText
          )
     (put-text-property @p1 @p2 'face $face)
     (put-text-property @p1 @p2 'xah-find-fpath @fpath)
@@ -457,14 +457,15 @@ $positionText
       (setq $bracketL xah-find-occur-prefix $bracketR xah-find-occur-postfix ))
 
     (with-current-buffer @buff
-      (insert $textBefore
-              (format "%s%s%s" xah-find-pos-prefix @p1 xah-find-pos-postfix)
-              $bracketL
-              $textMiddle
-              $bracketR
-              $textAfter
-              "\n"
-              xah-find-occur-separator ))))
+      (insert
+       (format "%s%s%s\n" xah-find-pos-prefix @p1 xah-find-pos-postfix)
+       $textBefore
+       $bracketL
+       $textMiddle
+       $bracketR
+       $textAfter
+       "\n"
+       xah-find-occur-separator ))))
 
 ;; (defun xah-find--print-replace-block (@p1 @p2 @buff)
 ;;   "print "
