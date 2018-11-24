@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.1.20181124144119
+;; Version: 4.2.20181124144731
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -379,9 +379,9 @@ Version 2018-10-21"
       (progn
         (save-excursion
           (goto-char p0)
-          (search-backward xah-find-file-separator)
-          (search-forward xah-find-filepath-prefix )
-          (setq p1 (point))
+          (search-forward xah-find-file-separator)
+          (search-backward xah-find-filepath-prefix )
+          (setq p1 (1+ (point)))
           (search-forward xah-find-filepath-postfix)
           (setq p2 (1- (point)))
           (setq $fpath (buffer-substring-no-properties p1 p2))
