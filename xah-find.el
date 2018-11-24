@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.1.20181101083213
+;; Version: 4.1.20181124144119
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -138,17 +138,6 @@
   :group 'xah-find
   )
 
-(defcustom xah-find-file-separator
-  "ff━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-  "A string as visual separator."
-  :group 'xah-find )
-
-(defcustom
-  xah-find-occur-separator
-  "oo────────────────────────────────────────────────────────────\n"
-  "A string as visual separator."
-  :group 'xah-find )
-
 (defface xah-find-file-path-highlight
   '((t :foreground "black"
        :background "pink"
@@ -168,6 +157,17 @@
        :background "green"
        ))
   "Face for replaced text."
+  :group 'xah-find )
+
+(defcustom xah-find-file-separator
+  "ff━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+  "A string as visual separator."
+  :group 'xah-find )
+
+(defcustom
+  xah-find-occur-separator
+  "oo────────────────────────────────────────────────────────────\n\n"
+  "A string as visual separator."
   :group 'xah-find )
 
 (defcustom xah-find-occur-prefix
@@ -422,7 +422,7 @@ Version 2018-10-21"
     (format "Backup: %s\n" @backup-p )
     (format "Search string: %s\n" @search-str )
     (when @replace-str (format "Replace string ❬%s❭\n" @replace-str))
-    xah-find-file-separator
+    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
     )
    @bufferObj))
 
