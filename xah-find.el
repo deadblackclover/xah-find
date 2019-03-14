@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2018 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.2.20181201024903
+;; Version: 4.3.20190314133732
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -342,7 +342,7 @@ Version 2016-12-18"
          ($pos (posn-point (event-end @event)))
          ($fpath (get-text-property $pos 'xah-find-fpath))
          ($pos-jump-to (get-text-property $pos 'xah-find-pos)))
-    (when (not (null $fpath))
+    (when $fpath
       (progn
         (find-file-other-window $fpath)
         (when $pos-jump-to (goto-char $pos-jump-to))))))
@@ -363,7 +363,7 @@ Version 2016-12-18"
 
 (defun xah-find--jump-to-place ()
   "Open file and put cursor at location of the occurrence.
-Version 2018-10-21"
+Version 2019-03-14"
   (interactive)
   (let (($fpath (get-text-property (point) 'xah-find-fpath))
         ($pos-jump-to (get-text-property (point) 'xah-find-pos))
@@ -379,6 +379,11 @@ Version 2018-10-21"
       (progn
         (save-excursion
           (goto-char p0)
+
+          ;; (if (eq (char-after (line-beginning-position)) (string-to-char xah-find-filepath-prefix ))
+          ;;     (progn )
+          ;;   (progn ))
+
           (search-forward xah-find-file-separator)
           (search-backward xah-find-filepath-prefix )
           (setq p1 (1+ (point)))
@@ -386,12 +391,15 @@ Version 2018-10-21"
           (setq p2 (1- (point)))
           (setq $fpath (buffer-substring-no-properties p1 p2))
 
-          (goto-char p0)
-          (search-backward xah-find-pos-prefix )
-          (setq p1 (1+ (point)))
-          (search-forward xah-find-pos-postfix )
-          (setq p2 (1- (point)))
-          (setq $pos-jump-to (string-to-number (buffer-substring-no-properties p1 p2))))
+          (progn
+            (goto-char p0)
+            (if (search-backward xah-find-pos-prefix nil t)
+                (progn
+                  (setq p1 (1+ (point)))
+                  (search-forward xah-find-pos-postfix )
+                  (setq p2 (1- (point)))
+                  (setq $pos-jump-to (string-to-number (buffer-substring-no-properties p1 p2))))
+              (setq $pos-jump-to nil))))
         (if (file-exists-p $fpath)
             (progn
               (find-file-other-window $fpath)
@@ -422,7 +430,7 @@ Version 2018-10-21"
     (format "Backup: %s\n" @backup-p )
     (format "Search string: %s\n" @search-str )
     (when @replace-str (format "Replace string ❬%s❭\n" @replace-str))
-    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n"
     )
    @bufferObj))
 
@@ -534,6 +542,30 @@ Version 2018-10-21"
 
 
 
+(defun xah-find--get-fpath-regex (&optional @default-ext)
+  "Returns a string, that is a regex to match a file extension.
+The result is based on current buffer's file extension.
+If current file doesn't have extension or current buffer isn't a file, then extension @default-ext is used.
+@default-ext should be a string, without dot, such as 「\"html\"」.
+If @default-ext is nil, 「\"html\"」 is used.
+Example return value: 「ββ.htmlββ'」, where β is a backslash.
+"
+  (let (
+        ($buff-is-file-p (buffer-file-name))
+        $fname-ext
+        $default-ext
+        )
+    (setq $default-ext (if (null @default-ext)
+                           (progn "html")
+                         (progn @default-ext)))
+    (if $buff-is-file-p
+        (progn
+          (setq $fname-ext (file-name-extension (buffer-file-name)))
+          (if (or (null $fname-ext) (equal $fname-ext ""))
+              (progn (concat "\\." $default-ext "$"))
+            (progn (concat "\\." $fname-ext "$"))))
+      (progn (concat "\\." $default-ext "$")))))
+
 ;;;###autoload
 (defun xah-find-count (@search-str @count-expr @count-number @input-dir @path-regex)
   "Report how many occurrences of a string, of a given dir.
@@ -548,7 +580,7 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
       (setq $operator (ido-completing-read "Report on: " '("greater than" "greater or equal to" "equal" "not equal" "less than" "less or equal to" )))
       (read-string (format "Count %s: "  $operator) "0")
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history))))
+      (read-from-minibuffer "File path regex: " (xah-find--get-fpath-regex "el") nil nil 'dired-regexp-history))))
   (let* (($outBufName "*xah-find output*")
          $outBuffer
          ($countOperator
@@ -578,30 +610,6 @@ Case sensitivity is determined by `case-fold-search'. Call `toggle-case-fold-sea
     (princ "Done." $outBuffer)
     (xah-find--switch-to-output $outBuffer)))
 
-(defun xah-find--get-default-file-extension-regex (&optional @default-ext)
-  "Returns a string, that is a regex to match a file extension.
-The result is based on current buffer's file extension.
-If current file doesn't have extension or current buffer isn't a file, then extension @default-ext is used.
-@default-ext should be a string, without dot, such as 「\"html\"」.
-If @default-ext is nil, 「\"html\"」 is used.
-Example return value: 「ββ.htmlββ'」, where β is a backslash.
-"
-  (let (
-        ($buff-is-file-p (buffer-file-name))
-        $fname-ext
-        $default-ext
-        )
-    (setq $default-ext (if (null @default-ext)
-                           (progn "html")
-                         (progn @default-ext)))
-    (if $buff-is-file-p
-        (progn
-          (setq $fname-ext (file-name-extension (buffer-file-name)))
-          (if (or (null $fname-ext) (equal $fname-ext ""))
-              (progn (concat "\\." $default-ext "$"))
-            (progn (concat "\\." $fname-ext "$"))))
-      (progn (concat "\\." $default-ext "$")))))
-
 ;;;###autoload
 (defun xah-find-text (@search-str1 @input-dir @path-regex @fixed-case-search-p @printContext-p)
   "Report files that contain string.
@@ -614,7 +622,7 @@ Result is shown in buffer *xah-find output*.
      (list
       (read-string (format "Search string (default %s): " $default-input) nil 'query-replace-history $default-input)
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-      (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "html") nil nil 'dired-regexp-history)
+      (read-from-minibuffer "File path regex: " (xah-find--get-fpath-regex "html") nil nil 'dired-regexp-history)
       (if current-prefix-arg (y-or-n-p "Fixed case in search?") nil )
       (if current-prefix-arg (y-or-n-p "Print surrounding Text?") t ))))
   (let* ((case-fold-search (not @fixed-case-search-p))
@@ -655,7 +663,7 @@ Result is shown in buffer *xah-find output*.
      (setq x-search-str (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word)))
      (setq x-replace-str (read-string (format "Replace string: ") nil 'query-replace-history))
      (setq x-input-dir (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH"))
-     (setq x-path-regex (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history))
+     (setq x-path-regex (read-from-minibuffer "File path regex: " (xah-find--get-fpath-regex "el") nil nil 'dired-regexp-history))
      (setq x-write-to-file-p (y-or-n-p "Write changes to file?"))
      (setq x-fixed-case-search-p (y-or-n-p "Fixed case in search?"))
      (setq x-fixed-case-replace-p (y-or-n-p "Fixed case in replacement?"))
@@ -699,7 +707,7 @@ Version 2016-12-21"
    (list
     (read-string (format "Search regex (default %s): " (current-word)) nil 'query-replace-history (current-word))
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history)
+    (read-from-minibuffer "File path regex: " (xah-find--get-fpath-regex "el") nil nil 'dired-regexp-history)
     (y-or-n-p "Fixed case search?")
     (ido-completing-read "Print context level: " '("with context string" "just matched pattern" "none" ))))
   (let (($count 0)
@@ -753,7 +761,7 @@ Version 2018-08-20"
     (read-regexp "Find regex: " )
     (read-string (format "Replace string: ") nil 'query-replace-history)
     (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
-    (read-from-minibuffer "File path regex: " (xah-find--get-default-file-extension-regex "el") nil nil 'dired-regexp-history)
+    (read-from-minibuffer "File path regex: " (xah-find--get-fpath-regex "el") nil nil 'dired-regexp-history)
     (y-or-n-p "Write changes to file?")
     (y-or-n-p "Fixed case in search?")
     (y-or-n-p "Fixed case in replacement?")
