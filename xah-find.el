@@ -1,9 +1,9 @@
 ;;; xah-find.el --- find replace in pure emacs lisp. Purpose similar to grep/sed. -*- coding: utf-8; lexical-binding: t; -*-
 
-;; Copyright © 2012-2018 by Xah Lee
+;; Copyright © 2012-2020 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.3.20190314133732
+;; Version: 4.3.20201218215235
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -690,7 +690,7 @@ Result is shown in buffer *xah-find output*.
            (when (> $count 0)
              (when @write-to-file-p
                (when @backup-p (copy-file $f (concat $f $backupSuffix) t))
-               (write-region 1 (point-max) $f nil 3))
+               (write-region (point-min) (point-max) $f nil 3))
              (xah-find--print-file-count $f $count $outBuffer )))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x)))
                             (directory-files-recursively @input-dir @path-regex)))
@@ -790,7 +790,7 @@ Version 2018-08-20"
              (when @write-to-file-p
                (when @backup-p
                  (copy-file $fp (concat $fp $backupSuffix) t))
-               (write-region 1 (point-max) $fp nil 3))))))
+               (write-region (point-min) (point-max) $fp nil 3))))))
      (xah-find--filter-list (lambda (x) (not (xah-find--ignore-dir-p x)))
                             (directory-files-recursively @input-dir @path-regex)))
     (princ "Done." $outBuffer)
