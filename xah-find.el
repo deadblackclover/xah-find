@@ -1,9 +1,9 @@
 ;;; xah-find.el --- find replace in pure emacs lisp. Purpose similar to grep/sed. -*- coding: utf-8; lexical-binding: t; -*-
 
-;; Copyright © 2012-2020 by Xah Lee
+;; Copyright © 2012-2021 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.3.20201218215235
+;; Version: 4.3.20210110193401
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -210,13 +210,13 @@
   )
 
 (defcustom xah-find-pos-prefix
-"❪"
+"⁅"
   "A string of left bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'."
   :group 'xah-find
   )
 
 (defcustom xah-find-pos-postfix
-"❫"
+"⁆"
   "A string of right bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'."
   :group 'xah-find
   )
