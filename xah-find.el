@@ -74,8 +74,6 @@
 ;;    ; more regex here. regex is matched against file full path
 ;;   ])
 
-;; to customize the color for matched text, call `customize-group' and then give xah-find.
-
 ;; USE CASE
 
 ;; To give a idea what file size, number of files, are practical, here's my typical use pattern:
@@ -92,7 +90,7 @@
 
 ;;; INSTALL
 
-;; To install manually, place this file in the directory 〔~/.emacs.d/lisp/〕
+;; To install manually, place this file in the directory [~/.emacs.d/lisp/]
 
 ;; Then, place the following code in your emacs init file
 
@@ -114,28 +112,22 @@
 
 ;;; Code:
 
-(require 'ido)       ; in emacs
-(ido-common-initialization) ; 2015-07-26 else, when ido-read-directory-name is called, Return key insert line return instead of submit. For some reason i dunno.
+(require 'ido)
+(ido-common-initialization)
+ ;; 2015-07-26 else, when ido-read-directory-name is called, Return key insert line return instead of submit. For some reason i dunno.
 
-(defcustom
-  xah-find-context-char-count-before
-  100
-  "Number of characters to print before search string."
-  :group 'xah-find
-  )
+(defvar xah-find-context-char-count-before 100 "Number of characters to print before search string." )
 
-(defcustom xah-find-context-char-count-after
+(defvar xah-find-context-char-count-after
   50
   "Number of characters to print after search string."
-  :group 'xah-find
   )
 
-(defcustom xah-find-dir-ignore-regex-list
+(defvar xah-find-dir-ignore-regex-list
   [
    "\\.git/"
    ]
   "A list or vector of regex patterns, if match, that directory will be ignored. Case is dependent on current value of `case-fold-search'"
-  :group 'xah-find
   )
 
 (defface xah-find-file-path-highlight
@@ -143,83 +135,52 @@
        :background "pink"
        ))
   "Face of file path where a text match is found."
-  :group 'xah-find )
+  :group 'xah-find
+  )
 
 (defface xah-find-match-highlight
   '((t :foreground "black"
        :background "yellow"
        ))
   "Face for matched text."
-  :group 'xah-find )
+  :group 'xah-find
+  )
 
 (defface xah-find-replace-highlight
   '((t :foreground "black"
        :background "green"
        ))
   "Face for replaced text."
-  :group 'xah-find )
+  :group 'xah-find
+  )
 
-(defcustom xah-find-file-separator
+(defvar xah-find-file-separator
   "ff━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
   "A string as visual separator."
-  :group 'xah-find )
+  )
 
-(defcustom
-  xah-find-occur-separator
+(defvar xah-find-occur-separator
   "oo────────────────────────────────────────────────────────────\n\n"
   "A string as visual separator."
-  :group 'xah-find )
-
-(defcustom xah-find-occur-prefix
-"〖"
-  "A left-bracket string that marks matched text and navigate previous/next. This string should basically never occure in your files. If it does, jumping to the location may not work."
-  :group 'xah-find
   )
 
-(defcustom xah-find-occur-postfix
-  "〗"
-  "A right-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'."
-  :group 'xah-find
-  )
+(defvar xah-find-occur-prefix "〖" "A left-bracket string that marks matched text and navigate previous/next. This string should basically never occure in your files. If it does, jumping to the location may not work." )
 
-(defcustom xah-find-replace-prefix
-"『"
-  "A left-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'."
-  :group 'xah-find
-  )
+(defvar xah-find-occur-postfix "〗" "A right-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'." )
 
-(defcustom xah-find-replace-postfix
-  "』"
-  "A right-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'."
-  :group 'xah-find
-  )
+(defvar xah-find-replace-prefix "『" "A left-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'." )
 
-;; more brackets at
-;; http://xahlee.info/comp/unicode_matching_brackets.html
+(defvar xah-find-replace-postfix "』" "A right-bracket string that marks matched text and navigate previous/next. See also `xah-find-occur-prefix'." )
 
-(defcustom xah-find-filepath-prefix
-"〘"
-  "A left-bracket string used to mark file path and navigate previous/next. See also `xah-find-occur-prefix'."
-  :group 'xah-find
-  )
+;; more brackets at http://xahlee.info/comp/unicode_matching_brackets.html
 
-(defcustom xah-find-filepath-postfix
-  "〙"
-  "A right-bracket string used to mark file path and navigate previous/next. See also `xah-find-occur-prefix'."
-  :group 'xah-find
-  )
+(defvar xah-find-filepath-prefix "〘" "A left-bracket string used to mark file path and navigate previous/next. See also `xah-find-occur-prefix'." )
 
-(defcustom xah-find-pos-prefix
-"⁅"
-  "A string of left bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'."
-  :group 'xah-find
-  )
+(defvar xah-find-filepath-postfix "〙" "A right-bracket string used to mark file path and navigate previous/next. See also `xah-find-occur-prefix'." )
 
-(defcustom xah-find-pos-postfix
-"⁆"
-  "A string of right bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'."
-  :group 'xah-find
-  )
+(defvar xah-find-pos-prefix "⁅" "A string of left bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'." )
+
+(defvar xah-find-pos-postfix "⁆" "A string of right bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'." )
 
 
 
@@ -298,9 +259,7 @@ URL `http://ergoemacs.org/emacs/elisp-xah-find-text.html'
 \\{xah-find-output-mode-map}
 Version 2021-06-23"
   (setq font-lock-defaults '((xah-find-font-lock-keywords)))
-  (set-syntax-table xah-find-output-syntax-table)
-  :group 'xah-find
-  )
+  (set-syntax-table xah-find-output-syntax-table))
 
 (defun xah-find-next-match ()
   "Put cursor to next occurrence."
@@ -433,7 +392,7 @@ Version 2019-03-14"
 @buff is the buffer to insert @p1 @p2 region.
 @no-context-string-p if true, don't add text before and after the region of interest. Else, `xah-find-context-char-count-before' number of chars are inserted before, and similar for `xah-find-context-char-count-after'.
 @alt-color if true, use a different highlight color face `xah-find-replace-highlight'. Else, use `xah-find-match-highlight'.
- 2017-04-07"
+ Version 2017-04-07 2021-08-05"
   (let* (
          ($begin (max 1 (- @p1 xah-find-context-char-count-before )))
          ($end (min (point-max) (+ @p2 xah-find-context-char-count-after )))
@@ -441,21 +400,16 @@ Version 2019-03-14"
          $textMiddle
          ($textAfter (if @no-context-string-p "" (buffer-substring-no-properties @p2 $end)))
          ($face (if @alt-color 'xah-find-replace-highlight 'xah-find-match-highlight))
-         $bracketL
-         $bracketR
-         $positionText
+         $bracketL $bracketR
          )
     (put-text-property @p1 @p2 'face $face)
     (put-text-property @p1 @p2 'xah-find-fpath @fpath)
     (put-text-property @p1 @p2 'xah-find-pos @p1)
     (add-text-properties @p1 @p2 '(mouse-face highlight))
-
     (setq $textMiddle (buffer-substring @p1 @p2 ))
-
     (if @alt-color
         (setq $bracketL xah-find-replace-prefix $bracketR xah-find-replace-postfix )
       (setq $bracketL xah-find-occur-prefix $bracketR xah-find-occur-postfix ))
-
     (with-current-buffer @buff
       (insert
        (format "%s%s%s\n" xah-find-pos-prefix @p1 xah-find-pos-postfix)
