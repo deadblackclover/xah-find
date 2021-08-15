@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2021 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.3.20210814182747
+;; Version: 4.3.20210814190053
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -288,23 +288,23 @@ Version 2016-12-18"
   (let* (
          ($pos (posn-point (event-end @event)))
          ($fpath (get-text-property $pos 'xah-find-fpath))
-         ($pos-jump-to (get-text-property $pos 'xah-find-pos)))
+         ($posJumpTo (get-text-property $pos 'xah-find-pos)))
     (when $fpath
       (progn
         (find-file-other-window $fpath)
-        (when $pos-jump-to (goto-char $pos-jump-to))))))
+        (when $posJumpTo (goto-char $posJumpTo))))))
 
 ;; (defun xah-find--jump-to-place ()
 ;;   "Open file and put cursor at location of the occurrence.
 ;; Version 2017-04-07"
 ;;   (interactive)
 ;;   (let (($fpath (get-text-property (point) 'xah-find-fpath))
-;;         ($pos-jump-to (get-text-property (point) 'xah-find-pos)))
+;;         ($posJumpTo (get-text-property (point) 'xah-find-pos)))
 ;;     (if $fpath
 ;;         (if (file-exists-p $fpath)
 ;;             (progn
 ;;               (find-file-other-window $fpath)
-;;               (when $pos-jump-to (goto-char $pos-jump-to)))
+;;               (when $posJumpTo (goto-char $posJumpTo)))
 ;;           (error "File at 「%s」 does not exist." $fpath))
 ;;       (insert "\n"))))
 
@@ -313,19 +313,19 @@ Version 2016-12-18"
 Version 2019-03-14"
   (interactive)
   (let (($fpath (get-text-property (point) 'xah-find-fpath))
-        ($pos-jump-to (get-text-property (point) 'xah-find-pos))
-        (p0 (point))
-        p1 p2
+        ($posJumpTo (get-text-property (point) 'xah-find-pos))
+        ($p0 (point))
+        $p1 $p2
         )
     (if $fpath
         (if (file-exists-p $fpath)
             (progn
               (find-file-other-window $fpath)
-              (when $pos-jump-to (goto-char $pos-jump-to)))
+              (when $posJumpTo (goto-char $posJumpTo)))
           (error "File at 「%s」 does not exist." $fpath))
       (progn
         (save-excursion
-          (goto-char p0)
+          (goto-char $p0)
 
           ;; (if (eq (char-after (line-beginning-position)) (string-to-char xah-find-filepath-prefix ))
           ;;     (progn )
@@ -333,24 +333,24 @@ Version 2019-03-14"
 
           (search-forward xah-find-file-separator)
           (search-backward xah-find-filepath-prefix )
-          (setq p1 (1+ (point)))
+          (setq $p1 (1+ (point)))
           (search-forward xah-find-filepath-postfix)
-          (setq p2 (1- (point)))
-          (setq $fpath (buffer-substring-no-properties p1 p2))
+          (setq $p2 (1- (point)))
+          (setq $fpath (buffer-substring-no-properties $p1 $p2))
 
           (progn
-            (goto-char p0)
+            (goto-char $p0)
             (if (search-backward xah-find-pos-prefix nil t)
                 (progn
-                  (setq p1 (1+ (point)))
+                  (setq $p1 (1+ (point)))
                   (search-forward xah-find-pos-postfix )
-                  (setq p2 (1- (point)))
-                  (setq $pos-jump-to (string-to-number (buffer-substring-no-properties p1 p2))))
-              (setq $pos-jump-to nil))))
+                  (setq $p2 (1- (point)))
+                  (setq $posJumpTo (string-to-number (buffer-substring-no-properties $p1 $p2))))
+              (setq $posJumpTo nil))))
         (if (file-exists-p $fpath)
             (progn
               (find-file-other-window $fpath)
-              (when $pos-jump-to (goto-char $pos-jump-to)))
+              (when $posJumpTo (goto-char $posJumpTo)))
           (error "File at 「%s」 does not exist." $fpath))))))
 
 
