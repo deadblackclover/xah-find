@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2021 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.3.20210814190053
+;; Version: 4.3.20210826061322
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -440,7 +440,7 @@ Version 2019-03-14"
       (while (search-forward xah-find-filepath-prefix nil t)
         (setq $p3 (point))
         (search-forward xah-find-filepath-postfix nil nil)
-        (setq $p4 (- (point) (length xah-find-filepath-postfix)))
+        (setq $p4 (match-beginning 0))
         (put-text-property $p3 $p4 'xah-find-fpath (buffer-substring-no-properties $p3 $p4))
         (add-text-properties $p3 $p4 '(mouse-face highlight))
         (put-text-property (line-beginning-position) (line-end-position) 'face 'xah-find-file-path-highlight)))
