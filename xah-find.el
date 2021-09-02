@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2021 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.3.20210828120248
+;; Version: 4.3.20210901221819
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -635,7 +635,7 @@ Version 2016-12-21"
        (with-temp-buffer
          (insert-file-contents $fp)
          (setq case-fold-search (not FixedCaseSearchQ))
-         (while (search-forward-regexp SearchRegex nil t)
+         (while (re-search-forward SearchRegex nil t)
            (setq $count (1+ $count))
            (cond
             ((equal PrintContextLevel "none") nil)
