@@ -3,7 +3,7 @@
 ;; Copyright © 2012-2021 by Xah Lee
 
 ;; Author: Xah Lee ( http://xahlee.info/ )
-;; Version: 4.3.20210901221819
+;; Version: 4.3.20210925094548
 ;; Created: 02 April 2012
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience, extensions, files, tools, unix
@@ -109,7 +109,7 @@
 ;;; CONTRIBUTOR
 ;; 2015-12-09 Peter Buckley (dx-pbuckley). defcustom for result highlight color.
 
-
+;; HHH___________________________________________________________________
 ;;; Code:
 
 (require 'ido)
@@ -118,10 +118,7 @@
 
 (defvar xah-find-context-char-count-before 100 "Number of characters to print before search string." )
 
-(defvar xah-find-context-char-count-after
-  50
-  "Number of characters to print after search string."
-  )
+(defvar xah-find-context-char-count-after 50 "Number of characters to print after search string." )
 
 (defvar xah-find-dir-ignore-regex-list
   [
@@ -182,7 +179,7 @@
 
 (defvar xah-find-pos-postfix "⁆" "A string of right bracket that marks line column position of occurrence. See also `xah-find-occur-prefix'." )
 
-
+;; HHH___________________________________________________________________
 
 (defvar xah-find-file-path-regex-history '() "File path regex history list, used by `xah-find-text' and others.")
 
@@ -212,7 +209,7 @@ Version 2018-09-22"
     nil
     ))
 
-
+;; HHH___________________________________________________________________
 (defvar xah-find-output-mode-map nil "Keybinding for `xah-find.el output'")
 (progn
   (setq xah-find-output-mode-map (make-sparse-keymap))
@@ -353,7 +350,7 @@ Version 2019-03-14"
               (when $posJumpTo (goto-char $posJumpTo)))
           (error "File at 「%s」 does not exist." $fpath))))))
 
-
+;; HHH___________________________________________________________________
 (defun xah-find--backup-suffix (S)
   "Return a string of the form 「~‹S›~‹date time stamp›~」"
   (concat "~" S (format-time-string "%Y%m%dT%H%M%S") "~"))
@@ -381,21 +378,21 @@ Version 2019-03-14"
     )
    BufferObj))
 
-(defun xah-find--occur-output (P1 P2 Fpath Buff &optional No-context-string-p Alt-color)
+(defun xah-find--occur-output (P1 P2 Fpath Buff &optional NoContextString-p AltColor)
   "Print result to a output buffer, with text properties (e.g. highlight and link).
 P1 P2 are region boundary. Region of current buffer are grabbed. The region typically is the searched text.
 Fpath is file path to be used as property value for clickable link.
 Buff is the buffer to insert P1 P2 region.
-No-context-string-p if true, don't add text before and after the region of interest. Else, `xah-find-context-char-count-before' number of chars are inserted before, and similar for `xah-find-context-char-count-after'.
-Alt-color if true, use a different highlight color face `xah-find-replace-highlight'. Else, use `xah-find-match-highlight'.
+NoContextString-p if true, don't add text before and after the region of interest. Else, `xah-find-context-char-count-before' number of chars are inserted before, and similar for `xah-find-context-char-count-after'.
+AltColor if true, use a different highlight color face `xah-find-replace-highlight'. Else, use `xah-find-match-highlight'.
  Version 2017-04-07 2021-08-05"
   (let* (
          ($begin (max 1 (- P1 xah-find-context-char-count-before )))
          ($end (min (point-max) (+ P2 xah-find-context-char-count-after )))
-         ($textBefore (if No-context-string-p "" (buffer-substring-no-properties $begin P1 )))
+         ($textBefore (if NoContextString-p "" (buffer-substring-no-properties $begin P1 )))
          $textMiddle
-         ($textAfter (if No-context-string-p "" (buffer-substring-no-properties P2 $end)))
-         ($face (if Alt-color 'xah-find-replace-highlight 'xah-find-match-highlight))
+         ($textAfter (if NoContextString-p "" (buffer-substring-no-properties P2 $end)))
+         ($face (if AltColor 'xah-find-replace-highlight 'xah-find-match-highlight))
          $bracketL $bracketR
          )
     (put-text-property P1 P2 'face $face)
@@ -403,7 +400,7 @@ Alt-color if true, use a different highlight color face `xah-find-replace-highli
     (put-text-property P1 P2 'xah-find-pos P1)
     (add-text-properties P1 P2 '(mouse-face highlight))
     (setq $textMiddle (buffer-substring P1 P2 ))
-    (if Alt-color
+    (if AltColor
         (setq $bracketL xah-find-replace-prefix $bracketR xah-find-replace-postfix )
       (setq $bracketL xah-find-occur-prefix $bracketR xah-find-occur-postfix ))
     (with-current-buffer Buff
@@ -451,7 +448,7 @@ Alt-color if true, use a different highlight color face `xah-find-replace-highli
     (xah-find-output-mode)
     ))
 
-
+;; HHH___________________________________________________________________
 
 (defun xah-find--get-fpath-regex (&optional DefaultExt)
   "Returns a string, that is a regex to match a file extension.
@@ -529,9 +526,9 @@ If `universal-argument' is called first, prompt to ask.
 Result is shown in buffer *xah-find output*.
 \\{xah-find-output-mode-map}"
   (interactive
-   (let (($default-input (if (use-region-p) (buffer-substring-no-properties (region-beginning) (region-end)) (current-word))))
+   (let (($defaultInput (if (region-active-p) (buffer-substring-no-properties (region-beginning) (region-end)) (current-word))))
      (list
-      (read-string (format "Search string (default %s): " $default-input) nil 'query-replace-history $default-input)
+      (read-string (format "Search string (default %s): " $defaultInput) nil 'query-replace-history $defaultInput)
       (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH")
       (read-from-minibuffer "File path regex: " (xah-find--get-fpath-regex "html") nil nil 'dired-regexp-history)
       (if current-prefix-arg (y-or-n-p "Fixed case in search?") nil )
@@ -570,18 +567,18 @@ Backup, if requested, backup filenames has suffix with timestamp, like this: ~xf
 Result is shown in buffer *xah-find output*.
 \\{xah-find-output-mode-map}"
   (interactive
-   (let ( x-search-str x-replace-str x-input-dir x-path-regex x-write-to-file-p x-fixed-case-search-p x-fixed-case-replace-p x-backup-p )
-     (setq x-search-str (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word)))
-     (setq x-replace-str (read-string (format "Replace string: ") nil 'query-replace-history))
-     (setq x-input-dir (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH"))
-     (setq x-path-regex (read-from-minibuffer "File path regex: " (xah-find--get-fpath-regex "el") nil nil 'dired-regexp-history))
-     (setq x-write-to-file-p (y-or-n-p "Write changes to file?"))
-     (setq x-fixed-case-search-p (y-or-n-p "Fixed case in search?"))
-     (setq x-fixed-case-replace-p (y-or-n-p "Fixed case in replacement?"))
-     (if x-write-to-file-p
-         (setq x-backup-p (y-or-n-p "Make backup?"))
-       (setq x-backup-p nil))
-     (list x-search-str x-replace-str x-input-dir x-path-regex x-write-to-file-p x-fixed-case-search-p x-fixed-case-replace-p x-backup-p )))
+   (let ( $search-str $replace-str $input-dir $path-regex $write-to-file-p $fixed-case-search-p $fixed-case-replace-p $backup-p )
+     (setq $search-str (read-string (format "Search string (default %s): " (current-word)) nil 'query-replace-history (current-word)))
+     (setq $replace-str (read-string (format "Replace string: ") nil 'query-replace-history))
+     (setq $input-dir (ido-read-directory-name "Directory: " default-directory default-directory "MUSTMATCH"))
+     (setq $path-regex (read-from-minibuffer "File path regex: " (xah-find--get-fpath-regex "el") nil nil 'dired-regexp-history))
+     (setq $write-to-file-p (y-or-n-p "Write changes to file?"))
+     (setq $fixed-case-search-p (y-or-n-p "Fixed case in search?"))
+     (setq $fixed-case-replace-p (y-or-n-p "Fixed case in replacement?"))
+     (if $write-to-file-p
+         (setq $backup-p (y-or-n-p "Make backup?"))
+       (setq $backup-p nil))
+     (list $search-str $replace-str $input-dir $path-regex $write-to-file-p $fixed-case-search-p $fixed-case-replace-p $backup-p )))
   (let (($outBufName "*xah-find output*")
         $outBuffer
         ($backupSuffix (xah-find--backup-suffix "xf")))
